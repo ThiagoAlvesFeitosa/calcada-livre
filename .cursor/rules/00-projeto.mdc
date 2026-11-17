@@ -16,7 +16,8 @@ alwaysApply: true
   verificar.
 - Teste nunca baixa modelo, nunca chama LLM e nunca acessa o Supabase: use as implementações falsas
   de `app/adaptadores/`.
-- Nenhum número mágico: valores em `app/nota/parametros.py` ou no `.env`.
+- Nenhum número mágico: nota em `app/nota/parametros.py`; visão em `app/visao/parametros.py`;
+  o resto no `.env`.
 - Se um módulo de regra (`nota/`, `decisao/`) importa biblioteca de terceiro, falta uma interface em
   `app/portas/`.
 - Prazo curto: prefira a solução mais simples que cumpre o critério de aceite. Nada de Redis,

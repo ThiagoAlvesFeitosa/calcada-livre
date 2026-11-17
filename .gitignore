@@ -19,6 +19,7 @@ uploads/
 *.pt
 *.safetensors
 modelos/
+weights/
 
 # Sistema
 .DS_Store

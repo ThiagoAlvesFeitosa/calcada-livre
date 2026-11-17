@@ -2,6 +2,33 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 17/11/2026 — F0.2 pipeline de visão
+
+O comando `uv run python scripts/processar.py ../videos/marilia_2026-11-17_trecho-02.mp4` gera
+`saida/<id>/quadros/` (já com pessoas/placas borradas) e `saida/<id>/resultado.json`. No fim imprime
+a lista com instante, confiança e `ocupacao_faixa`, e o tempo total (~55 s no CPU deste computador).
+`uv run pytest`: 5 testes passando (F0.1 + três da visão com detector falso). PyTorch `2.15.0+cpu`.
+Pesos em `modelos/` (fora do Git).
+
+Decisões: números da visão em `app/visao/parametros.py`. O SegFormer do Cityscapes marca a calçada
+de cimento de Marília quase toda como `road` (só dezenas de pixels como `sidewalk`); a máscara usa
+as duas classes. Carro e moto não entram na lista de obstáculos (no vídeo estão na rua; com a
+máscara de `road` a base deles cairia “na calçada”). O YOLO-World pequeno acerta pouco entulho e
+areia; o rastreio ByteTrack sumia detecções fracas, então o script usa `predict` e junta a mesma
+classe em até 1,5 s. Placa: se o modelo não achar, borra a faixa de baixo do veículo (55%).
+
+Comparação com o gabarito no trecho 02 (9 obstáculos): o sistema listou 15 itens. Parece acertar
+caixa de papelão (~1 s), lixeira (~5 s), pilar (~5 s) e alguns montes como `construction debris`
+(3,5 s, 10,5 s, 19 s). Erra classe (banco no lugar de areia, ocupação 0,67), inventa lixeira/caixa
+no começo e no fim, e não marca a árvore. Trecho 01 (controle, deveria ser zero) saiu com 10
+marcações — muitos falsos positivos. Precisão ainda baixa; o plano B da arquitetura (Roboflow ou
+treino em Marília) continua no radar.
+
+Pendente: commit da F0.2 (aguardar o Thiago confirmar). Mensagem prevista:
+`F0.2: pipeline de visão pela linha de comando`.
+
+Próximo passo: F1.1 (nota por trecho, teste antes do código).
+
 ## Situação em 17/11/2026 — gabarito dos trechos
 
 Não houve vistoria manual no local. O gabarito foi feito olhando os vídeos quadro a quadro e está

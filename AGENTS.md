@@ -44,8 +44,9 @@ docs/                    estado, arquitetura e backlog
 1. **Uma fatia por vez, na ordem do backlog.** Não comece a próxima antes de a atual estar pronta.
 2. **Teste antes do código na nota (F1.1)** e nos critérios marcados com *(teste)*. Escreva o teste,
    veja falhar pelo motivo certo, implemente o mínimo, veja passar.
-3. **Nenhum número mágico.** Pesos, limites, quadros por segundo e tamanho máximo do envio ficam em
-   `app/nota/parametros.py` ou no `.env`.
+3. **Nenhum número mágico.** Pesos e limites da nota ficam em `app/nota/parametros.py`. Quadros por
+   segundo, desfoque, dilatação, confiança e intervalos da visão ficam em `app/visao/parametros.py`.
+   O resto vai no `.env`.
 4. **Interfaces para o que é externo.** Armazenamento, detector e laudo têm implementação real e
    falsa. Teste nunca baixa modelo, nunca chama LLM e nunca acessa o Supabase.
 5. **Privacidade.** Pessoas e placas borradas antes de salvar qualquer quadro. Vídeo bruto apagado
