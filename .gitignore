@@ -1,0 +1,25 @@
+# Segredos
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Dados reais: vídeos e quadros não vão para o repositório
+*.mp4
+*.mov
+*.avi
+videos/
+saida/
+uploads/
+
+# Pesos dos modelos (baixados na primeira execução)
+*.pt
+*.safetensors
+modelos/
+
+# Sistema
+.DS_Store
+Thumbs.db

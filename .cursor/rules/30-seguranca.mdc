@@ -1,0 +1,23 @@
+---
+description: Privacidade e segurança para código que recebe vídeo, salva quadros, escreve log ou usa segredos.
+globs: ["app/**/*.py", "scripts/**/*.py"]
+alwaysApply: false
+---
+
+# Segurança e dados pessoais
+
+- **Borrar antes de salvar.** Nenhum quadro vai para o disco ou para o Supabase sem `person` e
+  `license plate` borrados. O vídeo de rua mostra pessoas e placas reais (LGPD).
+- **Vídeo bruto não fica.** Apague o arquivo enviado depois do processamento, mesmo quando o
+  processamento falha (`try/finally`).
+- **Envio.** Aceite só tipos de vídeo, com limite de tamanho em parâmetro. Recuse `trecho_id` que não
+  existe. Gere o nome do arquivo no servidor; nunca use o nome que veio do usuário num caminho.
+- **Log.** Registre só identificadores, tempos e códigos. Nunca caminho com nome original de
+  arquivo, conteúdo de quadro, chave ou URL com token.
+- **Segredos.** Leia do ambiente pelo `app/config.py`. Nunca imprima, registre ou devolva o valor de
+  uma variável do `.env`. Variável nova vai para o `.env.example`, sem valor.
+- **Configuração vazia falha alto.** Se `ARMAZENAMENTO=supabase` e faltar URL ou chave, a API não
+  sobe e diz qual variável falta, sem mostrar valores.
+- **Laudo.** O texto do LLM só pode citar obstáculos presentes no JSON do trecho. Se citar algo que
+  não existe, descarte e use o laudo de modelo fixo.
+- **CORS** restrito ao endereço do próprio site.

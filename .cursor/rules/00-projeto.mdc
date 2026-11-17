@@ -1,0 +1,26 @@
+---
+description: Contexto do FIAP Calçada Livre e ciclo de trabalho. Vale sempre.
+globs: []
+alwaysApply: true
+---
+
+# FIAP Calçada Livre — contexto
+
+- Leia `AGENTS.md`, `docs/00-ESTADO-DO-PROJETO.md` e a fatia atual em `docs/backlog.md` antes de
+  escrever código. A arquitetura está em `docs/05-arquitetura.md`.
+- Trabalhe numa fatia por vez, na ordem do backlog. A próxima é a primeira cuja dependência está
+  pronta.
+- Na F1.1 e nos critérios marcados com *(teste)*: escreva o teste, rode e veja falhar, implemente o
+  mínimo, rode e veja passar. Teste que passa de primeira é suspeito.
+- Nome de teste em português, descrevendo o comportamento. Três blocos: preparar, executar,
+  verificar.
+- Teste nunca baixa modelo, nunca chama LLM e nunca acessa o Supabase: use as implementações falsas
+  de `app/adaptadores/`.
+- Nenhum número mágico: valores em `app/nota/parametros.py` ou no `.env`.
+- Se um módulo de regra (`nota/`, `decisao/`) importa biblioteca de terceiro, falta uma interface em
+  `app/portas/`.
+- Prazo curto: prefira a solução mais simples que cumpre o critério de aceite. Nada de Redis,
+  Celery ou framework de front-end.
+- Não faça commit nem push sem o Thiago confirmar. Ao fechar a fatia, atualize o topo de
+  `docs/00-ESTADO-DO-PROJETO.md`.
+- Explique ao Thiago em linguagem simples, sem jargão.
