@@ -25,3 +25,23 @@ COR_VERMELHO = "#c62828"
 COR_CINZA = "#9e9e9e"
 
 QUADROS_NO_DETALHE = 3
+DISTANCIA_MAXIMA_TRECHO_M = 50
+FUSO_BRASILIA = "America/Sao_Paulo"
+
+NOMES_CLASSES_PT: dict[str, str] = {
+    "pole": "poste",
+    "tree": "árvore",
+    "trash bin": "lixeira",
+    "car": "carro",
+    "motorcycle": "moto",
+    "pothole": "buraco",
+    "stairs": "degrau",
+    "construction debris": "entulho",
+    "sand pile": "areia",
+    "bricks": "tijolos",
+    "cardboard box": "caixa de papelão",
+    "bench": "banco",
+    "sign": "placa",
+    "person": "pessoa",
+    "license plate": "placa",
+}

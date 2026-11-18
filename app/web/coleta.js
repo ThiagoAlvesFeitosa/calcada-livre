@@ -4,41 +4,53 @@ const passos = [
   "3. Um vídeo por face de quadra, até 60 segundos.",
 ];
 
-const cores = { verde: "#2e7d32", amarelo: "#f9a825", vermelho: "#c62828", cinza: "#9e9e9e" };
-
 let passoAtual = 0;
 let trechoId = null;
-let mapa = null;
+let trechoNome = null;
+let trechos = [];
 
-function corLinha(propriedades) {
-  if (!propriedades.filmado || !propriedades.cor) {
-    return cores.cinza;
-  }
-  return cores[propriedades.cor] || cores.cinza;
+function marcarEscolhido(id, nome) {
+  trechoId = id;
+  trechoNome = nome;
+  document.getElementById("trecho-escolhido").textContent = "Trecho: " + nome;
 }
 
-async function carregarMapa() {
-  mapa = L.map("mapa").setView([-22.2175, -49.9463], 18);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap",
-  }).addTo(mapa);
+function mostrarLista() {
+  document.getElementById("rotulo-lista").classList.remove("escondido");
+  document.getElementById("lista-trechos").classList.remove("escondido");
+}
+
+function esconderConfirmacao() {
+  document.getElementById("confirmacao").classList.add("escondido");
+  document.getElementById("confirmar").classList.add("escondido");
+  document.getElementById("escolher-outro").classList.add("escondido");
+}
+
+function montarLista() {
+  const lista = document.getElementById("lista-trechos");
+  lista.innerHTML = "";
+  trechos.forEach((item) => {
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "secundario";
+    botao.textContent = item.nome;
+    botao.addEventListener("click", () => {
+      marcarEscolhido(item.id, item.nome);
+      esconderConfirmacao();
+    });
+    const li = document.createElement("li");
+    li.appendChild(botao);
+    lista.appendChild(li);
+  });
+}
+
+async function carregarTrechos() {
   const geojson = await fetch("/trechos").then((r) => r.json());
-  const camada = L.geoJSON(geojson, {
-    style: (feature) => ({
-      color: corLinha(feature.properties),
-      weight: 7,
-    }),
-    onEachFeature: (feature, layer) => {
-      layer.on("click", () => {
-        trechoId = feature.properties.id || feature.id;
-        document.getElementById("trecho-escolhido").textContent =
-          "Trecho: " + (feature.properties.nome || trechoId);
-      });
-    },
-  }).addTo(mapa);
-  if (camada.getBounds().isValid()) {
-    mapa.fitBounds(camada.getBounds(), { padding: [20, 20] });
-  }
+  trechos = (geojson.features || []).map((feature) => ({
+    id: feature.properties.id || feature.id,
+    nome: feature.properties.nome || feature.id,
+  }));
+  montarLista();
 }
 
 document.getElementById("proximo-passo").addEventListener("click", () => {
@@ -53,13 +65,60 @@ document.getElementById("proximo-passo").addEventListener("click", () => {
   }
 });
 
+document.getElementById("usar-localizacao").addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    mostrarLista();
+    document.getElementById("trecho-escolhido").textContent =
+      "Sem GPS neste navegador. Escolha o trecho na lista.";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async (posicao) => {
+      const params = new URLSearchParams({
+        lat: String(posicao.coords.latitude),
+        lon: String(posicao.coords.longitude),
+      });
+      const corpo = await fetch("/localizacao?" + params.toString()).then((r) => r.json());
+      if (!corpo.trecho) {
+        mostrarLista();
+        document.getElementById("trecho-escolhido").textContent =
+          "Você não está perto de um trecho do mapa. Escolha na lista.";
+        return;
+      }
+      document.getElementById("confirmacao").textContent =
+        "Você está em " + corpo.trecho.nome + " — confirmar?";
+      document.getElementById("confirmacao").classList.remove("escondido");
+      document.getElementById("confirmar").classList.remove("escondido");
+      document.getElementById("escolher-outro").classList.remove("escondido");
+      document.getElementById("confirmar").dataset.id = corpo.trecho.id;
+      document.getElementById("confirmar").dataset.nome = corpo.trecho.nome;
+    },
+    () => {
+      mostrarLista();
+      document.getElementById("trecho-escolhido").textContent =
+        "Não deu para usar a localização. Escolha o trecho na lista.";
+    }
+  );
+});
+
+document.getElementById("confirmar").addEventListener("click", (evento) => {
+  const botao = evento.currentTarget;
+  marcarEscolhido(botao.dataset.id, botao.dataset.nome);
+  esconderConfirmacao();
+});
+
+document.getElementById("escolher-outro").addEventListener("click", () => {
+  esconderConfirmacao();
+  mostrarLista();
+});
+
 document.getElementById("video").addEventListener("change", (evento) => {
   const arquivo = evento.target.files[0];
   if (!arquivo) {
     return;
   }
   if (!trechoId) {
-    alert("Escolha o trecho no mapa antes de enviar.");
+    alert("Escolha o trecho antes de enviar.");
     evento.target.value = "";
     return;
   }
@@ -117,7 +176,6 @@ function enviar(arquivo) {
       "</p><p>Obstáculos por 100 m: " +
       Number(corpo.obstaculos_por_100m).toFixed(1) +
       "</p>";
-    carregarMapa();
   };
   xhr.onerror = () => {
     processando.classList.add("escondido");
@@ -127,4 +185,4 @@ function enviar(arquivo) {
   xhr.send(dados);
 }
 
-carregarMapa();
+carregarTrechos();

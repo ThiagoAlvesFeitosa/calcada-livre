@@ -2,6 +2,18 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — GPS, data BR e nomes em português
+
+A página de gravar não tem mais mapa. Botão **Usar minha localização** (até 50 m da linha);
+confirmação com “escolher outro”. Sem GPS (http na rede local) ou longe: lista de nomes.
+Testes: ponto no trecho 02 escolhe o 02; ponto em São Paulo não escolhe ninguém.
+
+Data no painel: `dd/mm/aaaa HH:MM` no horário de Brasília. Classes em português no painel e nas
+etiquetas dos quadros (`NOMES_CLASSES_PT` em `app/nota/parametros.py`). Os dois vídeos foram
+processados de novo (`poste`, `caixa de papelao`, etc.). `uv run pytest`: 26 testes.
+
+Pendente: commit destes ajustes (aguardar o Thiago confirmar).
+
 ## Situação em 18/11/2026 — F1.3 painel com mapa
 
 `http://IP:8000/painel`: Leaflet + OSM. Trechos 01 verde (100) e 02 vermelho (0); faces extras

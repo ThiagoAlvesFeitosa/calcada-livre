@@ -70,6 +70,19 @@ def nomes_para_yolo() -> list[str]:
     return nomes
 
 
+def nome_em_portugues(nome: str) -> str:
+    from app.nota.parametros import NOMES_CLASSES_PT
+
+    canonico = classe_nossa(nome)
+    return NOMES_CLASSES_PT.get(canonico, canonico)
+
+
+def etiqueta_quadro(nome: str) -> str:
+    texto = nome_em_portugues(nome)
+    tabela = str.maketrans("áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ", "aaaaaeeeeiiiiooooouuuucAAAAAEEEEIIIIOOOOOUUUUC")
+    return texto.translate(tabela)
+
+
 def classe_nossa(nome: str) -> str:
     chave = nome.strip().lower()
     for canonico, variantes in MAPA_CLASSES.items():

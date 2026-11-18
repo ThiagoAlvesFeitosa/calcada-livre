@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Calçada Livre — gravar trecho</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/estatico/estilos.css">
 </head>
 <body>
@@ -17,8 +16,17 @@
       <p id="passo-texto">1. Celular deitado, na altura do peito, apontado para a calçada 3 a 5 m à frente.</p>
       <button type="button" id="proximo-passo">Próximo</button>
     </section>
-    <div id="mapa" class="mapa"></div>
-    <p id="trecho-escolhido">Toque num trecho no mapa.</p>
+    <section class="cartao" id="escolha">
+      <button type="button" id="usar-localizacao">Usar minha localização</button>
+      <p id="confirmacao" class="escondido"></p>
+      <p>
+        <button type="button" id="confirmar" class="escondido">Confirmar</button>
+        <button type="button" id="escolher-outro" class="escondido secundario">Escolher outro</button>
+      </p>
+      <p id="rotulo-lista">Ou escolha o trecho na lista:</p>
+      <ul id="lista-trechos"></ul>
+      <p id="trecho-escolhido">Nenhum trecho selecionado.</p>
+    </section>
     <label class="botao">
       Gravar calçada
       <input id="video" class="escondido" type="file" accept="video/*" capture="environment">
@@ -33,7 +41,6 @@
     </section>
     <section id="resultado" class="escondido resultado"></section>
   </main>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/estatico/coleta.js"></script>
 </body>
 </html>

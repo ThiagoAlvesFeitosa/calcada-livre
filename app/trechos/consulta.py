@@ -4,9 +4,11 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
-from app.nota.parametros import QUADROS_NO_DETALHE
+from app.nota.parametros import FUSO_BRASILIA, QUADROS_NO_DETALHE
 from app.nota.regras import calcular_nota
+from app.visao.parametros import nome_em_portugues
 from app.trechos.geometria import (
     carregar_colecao,
     comprimento_do_trecho,
@@ -25,12 +27,32 @@ def _ler_json(caminho: Path) -> dict[str, Any] | None:
     return json.loads(caminho.read_text(encoding="utf-8"))
 
 
+def formatar_data_brasilia(valor: str | datetime | None) -> str | None:
+    if valor is None:
+        return None
+    if isinstance(valor, datetime):
+        momento = valor
+    else:
+        texto = str(valor)
+        if texto.endswith("Z"):
+            texto = texto[:-1] + "+00:00"
+        try:
+            momento = datetime.fromisoformat(texto)
+        except ValueError:
+            return str(valor)
+    if momento.tzinfo is None:
+        momento = momento.replace(tzinfo=timezone.utc)
+    return momento.astimezone(ZoneInfo(FUSO_BRASILIA)).strftime("%d/%m/%Y %H:%M")
+
+
 def _data_da_varredura(pasta: Path, nota: dict[str, Any] | None) -> str | None:
     if nota and nota.get("data"):
-        return str(nota["data"])
+        return formatar_data_brasilia(str(nota["data"]))
     resultado = pasta / "resultado.json"
     if resultado.exists():
-        return datetime.fromtimestamp(resultado.stat().st_mtime, tz=timezone.utc).isoformat()
+        return formatar_data_brasilia(
+            datetime.fromtimestamp(resultado.stat().st_mtime, tz=timezone.utc)
+        )
     return None
 
 
@@ -43,6 +65,7 @@ def nota_do_trecho(pasta_saida: Path, colecao: dict[str, Any], trecho_id: str) -
     if gravada:
         gravada = dict(gravada)
         gravada["comprimento_m"] = comprimento
+        gravada["data"] = formatar_data_brasilia(gravada.get("data"))
         return gravada
     resultado = _ler_json(pasta / "resultado.json")
     if resultado is None:
@@ -56,7 +79,7 @@ def nota_do_trecho(pasta_saida: Path, colecao: dict[str, Any], trecho_id: str) -
 def _obstaculos_por_tipo(obstaculos: list[dict[str, Any]]) -> dict[str, int]:
     contagem: dict[str, int] = {}
     for item in obstaculos:
-        classe = str(item.get("classe", "desconhecido"))
+        classe = nome_em_portugues(str(item.get("classe", "desconhecido")))
         contagem[classe] = contagem.get(classe, 0) + 1
     return contagem
 

@@ -47,3 +47,6 @@ nav a { margin-right: 1rem; }
 .quadros img { height: 120px; border-radius: 8px; }
 .legenda { font-size: 0.85rem; color: #555; }
 ul { padding-left: 1.2rem; }
+#lista-trechos { list-style: none; padding: 0; }
+#lista-trechos li { margin-bottom: 0.4rem; }
+#lista-trechos button { width: 100%; text-align: left; }

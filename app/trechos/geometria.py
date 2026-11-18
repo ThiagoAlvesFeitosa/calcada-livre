@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from app.nota.parametros import RAIO_TERRA_M
+from app.nota.parametros import DISTANCIA_MAXIMA_TRECHO_M, RAIO_TERRA_M
 
 
 def carregar_colecao(caminho: Path) -> dict[str, Any]:
@@ -57,6 +57,63 @@ def comprimento_da_geometria(geometria: dict[str, Any] | None) -> float:
     if tipo == "MultiLineString":
         return sum(comprimento_linha(linha) for linha in coordenadas)
     return 0.0
+
+
+def _xy_metros(lon: float, lat: float, lon0: float, lat0: float) -> tuple[float, float]:
+    x = math.radians(lon - lon0) * RAIO_TERRA_M * math.cos(math.radians(lat0))
+    y = math.radians(lat - lat0) * RAIO_TERRA_M
+    return x, y
+
+
+def _distancia_ponto_segmento(
+    lon: float, lat: float, lon1: float, lat1: float, lon2: float, lat2: float
+) -> float:
+    px, py = _xy_metros(lon, lat, lon, lat)
+    ax, ay = _xy_metros(lon1, lat1, lon, lat)
+    bx, by = _xy_metros(lon2, lat2, lon, lat)
+    abx, aby = bx - ax, by - ay
+    apx, apy = px - ax, py - ay
+    comprimento2 = abx * abx + aby * aby
+    if comprimento2 == 0:
+        return math.hypot(px - ax, py - ay)
+    t = max(0.0, min(1.0, (apx * abx + apy * aby) / comprimento2))
+    return math.hypot(px - (ax + t * abx), py - (ay + t * aby))
+
+
+def _distancia_ponto_geometria(lon: float, lat: float, geometria: dict[str, Any] | None) -> float:
+    if not geometria:
+        return float("inf")
+    tipo = geometria.get("type")
+    coordenadas = geometria.get("coordinates") or []
+    linhas = [coordenadas] if tipo == "LineString" else coordenadas if tipo == "MultiLineString" else []
+    menor = float("inf")
+    for linha in linhas:
+        for (lon1, lat1), (lon2, lat2) in zip(linha, linha[1:]):
+            menor = min(menor, _distancia_ponto_segmento(lon, lat, float(lon1), float(lat1), float(lon2), float(lat2)))
+    return menor
+
+
+def trecho_mais_proximo(
+    colecao: dict[str, Any],
+    lon: float,
+    lat: float,
+    maximo_m: float = DISTANCIA_MAXIMA_TRECHO_M,
+) -> dict[str, Any] | None:
+    melhor: dict[str, Any] | None = None
+    menor = float("inf")
+    for feature in colecao.get("features", []):
+        distancia = _distancia_ponto_geometria(lon, lat, feature.get("geometry"))
+        if distancia < menor:
+            menor = distancia
+            propriedades = feature.get("properties") or {}
+            melhor = {
+                "id": id_da_feature(feature),
+                "nome": propriedades.get("nome", id_da_feature(feature)),
+                "distancia_m": distancia,
+            }
+    if melhor is None or menor > maximo_m:
+        return None
+    return melhor
 
 
 def comprimento_do_trecho(colecao: dict[str, Any], trecho_id: str) -> float:

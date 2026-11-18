@@ -20,6 +20,7 @@ from app.visao.parametros import (
     SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE,
     classe_nossa,
     confianca_minima,
+    etiqueta_quadro,
 )
 from app.visao.privacidade import borrar_pessoas_e_placas
 
@@ -211,7 +212,7 @@ def _anotar(quadro: np.ndarray, caixas: list[Caixa]) -> np.ndarray:
         )
         cv2.putText(
             anotado,
-            classe_nossa(caixa.classe),
+            etiqueta_quadro(caixa.classe),
             (int(caixa.x1), max(int(caixa.y1) - 8, 18)),
             cv2.FONT_HERSHEY_SIMPLEX,
             ESCALA_TEXTO_CAIXA,

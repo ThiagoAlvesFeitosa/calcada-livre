@@ -26,10 +26,11 @@ from app.portas.detector import Detector
 from app.trechos.consulta import (
     carregar_trechos,
     detalhe_do_trecho,
+    formatar_data_brasilia,
     geojson_com_notas,
     resumo_censo,
 )
-from app.trechos.geometria import comprimento_do_trecho, ids_dos_trechos
+from app.trechos.geometria import comprimento_do_trecho, ids_dos_trechos, trecho_mais_proximo
 from app.visao.pipeline import processar_video
 
 PASTA_WEB = RAIZ / "app" / "web"
@@ -91,6 +92,17 @@ def pagina_painel() -> FileResponse:
 def listar_trechos(configuracao: Configuracao = Depends(obter_configuracao)) -> dict:
     colecao = carregar_trechos(configuracao.caminho_trechos)
     return geojson_com_notas(Path(configuracao.pasta_saida), colecao)
+
+
+@app.get("/localizacao")
+def localizacao(
+    lat: float,
+    lon: float,
+    configuracao: Configuracao = Depends(obter_configuracao),
+) -> dict:
+    colecao = carregar_trechos(configuracao.caminho_trechos)
+    achado = trecho_mais_proximo(colecao, lon, lat)
+    return {"trecho": achado}
 
 
 @app.get("/trechos/{trecho_id}")
@@ -182,7 +194,9 @@ async def enviar_video(
             json.dumps(nota, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        return {"trecho_id": trecho_id, **nota}
+        resposta = {"trecho_id": trecho_id, **nota}
+        resposta["data"] = formatar_data_brasilia(nota["data"])
+        return resposta
     finally:
         caminho_bruto.unlink(missing_ok=True)
 
