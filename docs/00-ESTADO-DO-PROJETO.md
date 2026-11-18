@@ -2,6 +2,18 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — F1.2 envio pelo site
+
+Site: `uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`. No celular da mesma Wi-Fi:
+`http://IP:8000`. Sem https.
+
+`POST /videos` recusa arquivo que não é vídeo, arquivo acima de 200 MB e trecho que não existe no
+GeoJSON. O bruto é apagado depois. O `DetectorReal` carrega na primeira chamada e reaproveita.
+Comprimento vem da linha em `dados/trechos.geojson`. Se só existir `resultado.json`, a nota é
+calculada na hora. Quadros só em `saida/<id>/quadros/*.png` se o id estiver no GeoJSON; `..` → 404.
+
+`uv run pytest` na fatia de envio: testes de vídeo passando. Próximo: F1.3 (painel com mapa).
+
 ## Situação em 18/11/2026 — F1.1 nota por trecho
 
 A nota sai de 100, desconta 15 se `ocupacao_faixa` > 0,5, 8 se for parcial e 10 se for buraco ou

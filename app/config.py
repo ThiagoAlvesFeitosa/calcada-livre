@@ -10,13 +10,17 @@ class Configuracao:
     armazenamento: str
     pasta_saida: str
     pasta_modelos: Path
+    tamanho_maximo_video_mb: int
+    caminho_trechos: Path
 
 
 def obter_configuracao() -> Configuracao:
     return Configuracao(
         armazenamento=os.getenv("ARMAZENAMENTO", "local"),
-        pasta_saida="saida",
+        pasta_saida=os.getenv("PASTA_SAIDA", "saida"),
         pasta_modelos=RAIZ / "modelos",
+        tamanho_maximo_video_mb=int(os.getenv("TAMANHO_MAXIMO_VIDEO_MB", "200")),
+        caminho_trechos=Path(os.getenv("CAMINHO_TRECHOS", str(RAIZ / "dados" / "trechos.geojson"))),
     )
 
 

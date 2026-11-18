@@ -13,7 +13,15 @@ LIMITE_AMARELO = 50
 
 CLASSES_BARREIRA = frozenset({"pothole", "stairs", "buraco", "degrau"})
 
-COMPRIMENTO_PROVISORIO_M: dict[str, float] = {
-    "marilia_2026-11-17_trecho-01": 10.0,
-    "marilia_2026-11-17_trecho-02": 30.0,
-}
+RAIO_TERRA_M = 6_371_000
+BYTES_POR_MEGABYTE = 1024 * 1024
+EXTENSOES_VIDEO = frozenset({".mp4", ".webm", ".mov", ".m4v"})
+
+CENSO_CALCADA_DESOBSTRUIDA = 0.464
+
+COR_VERDE = "#2e7d32"
+COR_AMARELO = "#f9a825"
+COR_VERMELHO = "#c62828"
+COR_CINZA = "#9e9e9e"
+
+QUADROS_NO_DETALHE = 3

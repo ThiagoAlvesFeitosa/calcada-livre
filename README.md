@@ -15,3 +15,11 @@ Washington).
 Documentação em [`docs/`](docs/). Antes de programar, leia o [`AGENTS.md`](AGENTS.md).
 
 Autor: Thiago Alves Feitosa — Sistemas de Informação, FIAP.
+
+No computador:
+
+```
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+No celular, na mesma Wi-Fi: `http://IP-DO-COMPUTADOR:8000` (gravar) e `http://IP-DO-COMPUTADOR:8000/painel` (mapa). Não precisa de https.

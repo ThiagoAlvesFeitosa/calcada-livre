@@ -12,6 +12,7 @@ dependencies = [
     "ftfy",
     "lap",
     "opencv-python-headless",
+    "python-multipart>=0.0.34",
     "torch",
     "torchvision",
     "transformers",
