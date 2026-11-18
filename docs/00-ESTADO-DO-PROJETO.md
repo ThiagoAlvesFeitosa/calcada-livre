@@ -2,6 +2,17 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — F1.3 painel com mapa
+
+`http://IP:8000/painel`: Leaflet + OSM. Trechos 01 verde (100) e 02 vermelho (0); faces extras
+cinza. Clique no 02 mostra nota, obstáculos por tipo e 3 quadros com mosaico. Cartão do Censo:
+**1 de 2** filmados sem obstáculo no caminho, ao lado de **46,4%** (referência; não é a mesma
+medida). `GET /trechos` devolve GeoJSON com a nota (calculada na hora se só houver resultado.json).
+`uv run pytest`: 24 testes. GeoJSON ainda provisório (Av. Ipiranga); trocar pelo desenho do
+quarteirão no geojson.io.
+
+Próximo passo: F2.1 (nuvem), depois de gravar o vídeo da demo se o prazo apertar.
+
 ## Situação em 18/11/2026 — F1.2 envio pelo site
 
 Site: `uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`. No celular da mesma Wi-Fi:
