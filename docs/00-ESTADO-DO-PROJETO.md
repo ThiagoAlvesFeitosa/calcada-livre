@@ -2,6 +2,31 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — F1.1 nota por trecho
+
+A nota sai de 100, desconta 15 se `ocupacao_faixa` > 0,5, 8 se for parcial e 10 se for buraco ou
+degrau. O desconto é ajustado para 100 m (trecho mais curto pesa mais). Piso 0. Verde ≥ 80,
+amarelo 50–79, vermelho < 50. Tudo em `app/nota/parametros.py`. Os seis testes da F1.1 foram
+escritos antes do código e passam. `uv run pytest`: 18 testes.
+
+Comprimento provisório (duração do vídeo a passo normal; na F1.3 troca pelo medido no mapa):
+trecho 01 = 10 m, trecho 02 = 30 m.
+
+`uv run python scripts/nota.py`:
+
+| Trecho | Comprimento | Nota | Cor | Obstáculos / 100 m | Faixa livre média |
+| --- | --- | --- | --- | --- | --- |
+| 01 | 10 m | 100 | verde | 0,0 | 100% |
+| 02 | 30 m | 0 | vermelho | 33,3 | 83% |
+
+No 02 nenhum obstáculo passou de 0,5 de ocupação (todos descontam como parcial). São 10 itens em
+30 m, o que estoura o piso. Quando o comprimento real entrar na F1.3, a nota sobe se o trecho for
+mais longo.
+
+Commit: `F1.1: nota por trecho com testes`.
+
+Próximo passo: F1.2 (envio pelo site).
+
 ## Situação em 18/11/2026 — calibração 0,12/65% e privacidade reforçada
 
 Parâmetros finais da visão: confiança 0,12, recorte do caminho 65%. Privacidade: mosaico

@@ -1,0 +1,19 @@
+NOTA_INICIAL = 100
+NOTA_MINIMA = 0
+METROS_REFERENCIA = 100
+
+DESCONTO_BLOQUEIO = 15
+DESCONTO_PARCIAL = 8
+DESCONTO_BARREIRA = 10
+
+LIMITE_OCUPACAO_BLOQUEIO = 0.5
+
+LIMITE_VERDE = 80
+LIMITE_AMARELO = 50
+
+CLASSES_BARREIRA = frozenset({"pothole", "stairs", "buraco", "degrau"})
+
+COMPRIMENTO_PROVISORIO_M: dict[str, float] = {
+    "marilia_2026-11-17_trecho-01": 10.0,
+    "marilia_2026-11-17_trecho-02": 30.0,
+}
