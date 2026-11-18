@@ -242,6 +242,7 @@ def processar_quadros(
     detector: Detector,
     pasta_saida: Path | str,
     identificador: str,
+    duracao_s: float | None = None,
 ) -> dict:
     pasta = Path(pasta_saida) / identificador
     pasta_quadros = pasta / "quadros"
@@ -280,6 +281,9 @@ def processar_quadros(
         cv2.imwrite(str(nome), anotado)
 
     resultado = filtrar_obstaculos(brutas)
+    if duracao_s is None:
+        duracao_s = quadros[-1][1] if quadros else 0.0
+    resultado["duracao_s"] = round(float(duracao_s), 2)
     (pasta / "resultado.json").write_text(
         json.dumps(resultado, ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -310,6 +314,18 @@ def extrair_quadros(caminho_video: Path | str, por_segundo: int = QUADROS_POR_SE
     return quadros
 
 
+def duracao_do_video(caminho_video: Path | str) -> float:
+    captura = cv2.VideoCapture(str(caminho_video))
+    if not captura.isOpened():
+        return 0.0
+    fps = captura.get(cv2.CAP_PROP_FPS) or 0.0
+    quadros = captura.get(cv2.CAP_PROP_FRAME_COUNT) or 0.0
+    captura.release()
+    if fps > 0 and quadros > 0:
+        return float(quadros / fps)
+    return 0.0
+
+
 def processar_video(
     caminho_video: Path | str,
     detector: Detector,
@@ -319,4 +335,7 @@ def processar_video(
     caminho = Path(caminho_video)
     id_varredura = identificador or caminho.stem
     quadros = extrair_quadros(caminho)
-    return processar_quadros(quadros, detector, pasta_saida, id_varredura)
+    duracao = duracao_do_video(caminho)
+    if duracao <= 0 and quadros:
+        duracao = quadros[-1][1]
+    return processar_quadros(quadros, detector, pasta_saida, id_varredura, duracao_s=duracao)

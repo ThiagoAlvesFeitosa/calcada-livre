@@ -44,7 +44,14 @@ def _preparar(tmp_path: Path) -> ArmazenamentoFalso:
     pasta = tmp_path / "origem" / TRECHO_A
     pasta.mkdir(parents=True)
     (pasta / "resultado.json").write_text(
-        json.dumps({"obstaculos": []}),
+        json.dumps(
+            {
+                "duracao_s": 10,
+                "obstaculos": [
+                    {"classe": "pole", "instante_s": 5, "confianca": 0.9, "ocupacao_faixa": 0.2}
+                ],
+            }
+        ),
         encoding="utf-8",
     )
     (pasta / "nota.json").write_text(
@@ -84,6 +91,10 @@ def test_get_trechos_devolve_geojson_com_a_nota_mais_recente(tmp_path: Path) -> 
     assert por_id[TRECHO_A]["cor"] == "verde"
     assert por_id[TRECHO_B]["nota"] is None
     assert por_id[TRECHO_B]["cor"] is None
+    pontos = por_id[TRECHO_A]["pontos_obstaculos"]
+    assert len(pontos) == 1
+    assert pontos[0]["classe"] == "poste"
+    assert round(pontos[0]["lon"], 5) == -49.94645
     app.dependency_overrides.clear()
 
 

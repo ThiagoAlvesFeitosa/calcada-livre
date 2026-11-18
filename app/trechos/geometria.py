@@ -116,6 +116,38 @@ def trecho_mais_proximo(
     return melhor
 
 
+def ponto_na_linha(coordenadas: list, fracao: float) -> list[float]:
+    if not coordenadas:
+        return [0.0, 0.0]
+    trecho = min(max(float(fracao), 0.0), 1.0)
+    if len(coordenadas) == 1:
+        ponto = coordenadas[0]
+        return [float(ponto[0]), float(ponto[1])]
+    trechos: list[tuple[list, list, float]] = []
+    total = 0.0
+    for origem, destino in zip(coordenadas, coordenadas[1:]):
+        distancia = _haversine(
+            float(origem[0]), float(origem[1]), float(destino[0]), float(destino[1])
+        )
+        trechos.append((origem, destino, distancia))
+        total += distancia
+    if total <= 0:
+        ponto = coordenadas[0]
+        return [float(ponto[0]), float(ponto[1])]
+    alvo = trecho * total
+    acumulado = 0.0
+    for origem, destino, distancia in trechos:
+        if acumulado + distancia >= alvo:
+            parte = 0.0 if distancia == 0 else (alvo - acumulado) / distancia
+            return [
+                float(origem[0]) + parte * (float(destino[0]) - float(origem[0])),
+                float(origem[1]) + parte * (float(destino[1]) - float(origem[1])),
+            ]
+        acumulado += distancia
+    ultimo = coordenadas[-1]
+    return [float(ultimo[0]), float(ultimo[1])]
+
+
 def comprimento_do_trecho(colecao: dict[str, Any], trecho_id: str) -> float:
     feature = feature_por_id(colecao, trecho_id)
     if feature is None:

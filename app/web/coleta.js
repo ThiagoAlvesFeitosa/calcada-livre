@@ -1,29 +1,41 @@
-const passos = [
-  "1. Celular deitado, na altura do peito, apontado para a calçada 3 a 5 m à frente.",
-  "2. Ande devagar e sem parar.",
-  "3. Um vídeo por face de quadra, até 30 segundos.",
-];
-
-let passoAtual = 0;
 let trechoId = null;
 let trechoNome = null;
 let trechos = [];
 
+function mostrar(id) {
+  document.getElementById(id).classList.remove("escondido");
+}
+
+function esconder(id) {
+  document.getElementById(id).classList.add("escondido");
+}
+
+function rodape(passo) {
+  const ids = ["btn-gravar", "confirmar", "mudar-endereco", "btn-camera", "btn-mapa"];
+  ids.forEach(esconder);
+  if (passo === "inicio") {
+    mostrar("btn-gravar");
+  } else if (passo === "confirmar") {
+    mostrar("confirmar");
+    mostrar("mudar-endereco");
+  } else if (passo === "camera") {
+    mostrar("btn-camera");
+  } else if (passo === "mapa") {
+    mostrar("btn-mapa");
+  }
+}
+
 function marcarEscolhido(id, nome) {
   trechoId = id;
   trechoNome = nome;
-  document.getElementById("trecho-escolhido").textContent = "Trecho: " + nome;
+  esconder("inicio");
+  esconder("escolha");
+  mostrar("captura");
+  rodape("camera");
 }
 
 function mostrarLista() {
-  document.getElementById("rotulo-lista").classList.remove("escondido");
-  document.getElementById("lista-trechos").classList.remove("escondido");
-}
-
-function esconderConfirmacao() {
-  document.getElementById("confirmacao").classList.add("escondido");
-  document.getElementById("confirmar").classList.add("escondido");
-  document.getElementById("escolher-outro").classList.add("escondido");
+  mostrar("lista-trechos");
 }
 
 function montarLista() {
@@ -36,7 +48,6 @@ function montarLista() {
     botao.textContent = item.nome;
     botao.addEventListener("click", () => {
       marcarEscolhido(item.id, item.nome);
-      esconderConfirmacao();
     });
     const li = document.createElement("li");
     li.appendChild(botao);
@@ -53,63 +64,64 @@ async function carregarTrechos() {
   montarLista();
 }
 
-document.getElementById("proximo-passo").addEventListener("click", () => {
-  passoAtual += 1;
-  if (passoAtual >= passos.length) {
-    document.getElementById("tutorial").classList.add("escondido");
-    return;
-  }
-  document.getElementById("passo-texto").textContent = passos[passoAtual];
-  if (passoAtual === passos.length - 1) {
-    document.getElementById("proximo-passo").textContent = "Entendi";
-  }
-});
+function semTrechoPerto() {
+  esconder("inicio");
+  mostrar("escolha");
+  esconder("voce-esta");
+  document.getElementById("mensagem-gps").textContent =
+    "Não achamos um trecho cadastrado perto de você";
+  mostrarLista();
+  rodape("vazio");
+}
 
-document.getElementById("usar-localizacao").addEventListener("click", () => {
+function pedirGps() {
+  document.getElementById("btn-gravar").disabled = true;
   if (!navigator.geolocation) {
-    mostrarLista();
-    document.getElementById("trecho-escolhido").textContent =
-      "Sem GPS neste navegador. Escolha o trecho na lista.";
+    document.getElementById("btn-gravar").disabled = false;
+    semTrechoPerto();
     return;
   }
   navigator.geolocation.getCurrentPosition(
     async (posicao) => {
+      document.getElementById("btn-gravar").disabled = false;
       const params = new URLSearchParams({
         lat: String(posicao.coords.latitude),
         lon: String(posicao.coords.longitude),
       });
       const corpo = await fetch("/localizacao?" + params.toString()).then((r) => r.json());
       if (!corpo.trecho) {
-        mostrarLista();
-        document.getElementById("trecho-escolhido").textContent =
-          "Você não está perto de um trecho do mapa. Escolha na lista.";
+        semTrechoPerto();
         return;
       }
-      document.getElementById("confirmacao").textContent =
-        "Você está em " + corpo.trecho.nome + " — confirmar?";
-      document.getElementById("confirmacao").classList.remove("escondido");
-      document.getElementById("confirmar").classList.remove("escondido");
-      document.getElementById("escolher-outro").classList.remove("escondido");
+      esconder("inicio");
+      mostrar("escolha");
+      const titulo = document.getElementById("voce-esta");
+      titulo.innerHTML = "Você está em <span></span>";
+      titulo.querySelector("span").textContent = corpo.trecho.nome;
+      titulo.classList.remove("escondido");
+      document.getElementById("mensagem-gps").textContent = "";
+      esconder("lista-trechos");
       document.getElementById("confirmar").dataset.id = corpo.trecho.id;
       document.getElementById("confirmar").dataset.nome = corpo.trecho.nome;
+      rodape("confirmar");
     },
     () => {
-      mostrarLista();
-      document.getElementById("trecho-escolhido").textContent =
-        "Não deu para usar a localização. Escolha o trecho na lista.";
+      document.getElementById("btn-gravar").disabled = false;
+      semTrechoPerto();
     }
   );
-});
+}
+
+document.getElementById("btn-gravar").addEventListener("click", pedirGps);
 
 document.getElementById("confirmar").addEventListener("click", (evento) => {
   const botao = evento.currentTarget;
   marcarEscolhido(botao.dataset.id, botao.dataset.nome);
-  esconderConfirmacao();
 });
 
-document.getElementById("escolher-outro").addEventListener("click", () => {
-  esconderConfirmacao();
+document.getElementById("mudar-endereco").addEventListener("click", () => {
   mostrarLista();
+  rodape("vazio");
 });
 
 document.getElementById("video").addEventListener("change", (evento) => {
@@ -125,51 +137,49 @@ document.getElementById("video").addEventListener("change", (evento) => {
   enviar(arquivo);
 });
 
-function mostrarNota(corpo, processando, resultado) {
-  processando.classList.add("escondido");
+function mostrarNota(corpo) {
+  const resultado = document.getElementById("resultado");
   resultado.classList.remove("escondido");
   resultado.innerHTML =
     '<p>Nota</p><p class="nota ' +
     corpo.cor +
     '">' +
     corpo.nota +
-    "</p><p>Cor: " +
-    corpo.cor +
-    "</p><p>Obstáculos por 100 m: " +
-    Number(corpo.obstaculos_por_100m).toFixed(1) +
     "</p>";
+  rodape("mapa");
 }
 
-function perguntarAndamento(codigo, intervaloMs, processando, resultado, pararRelogio) {
+function perguntarAndamento(codigo, intervaloMs, pararRelogio) {
   const consultar = async () => {
     const resposta = await fetch("/processamentos/" + codigo);
     const corpo = await resposta.json();
     if (corpo.status === "pronto") {
       clearInterval(laço);
       pararRelogio();
-      mostrarNota(corpo, processando, resultado);
+      esconder("processando");
+      mostrarNota(corpo);
       return;
     }
     if (corpo.status === "erro") {
       clearInterval(laço);
       pararRelogio();
-      processando.classList.add("escondido");
+      esconder("processando");
+      const resultado = document.getElementById("resultado");
       resultado.classList.remove("escondido");
       resultado.textContent = "Não foi possível processar. Tente de novo.";
+      rodape("inicio");
     }
   };
   const laço = setInterval(consultar, intervaloMs);
 }
 
 function enviar(arquivo) {
-  const envio = document.getElementById("envio");
-  const processando = document.getElementById("processando");
-  const resultado = document.getElementById("resultado");
-  const barra = document.getElementById("barra");
-  envio.classList.remove("escondido");
-  processando.classList.add("escondido");
-  resultado.classList.add("escondido");
-  barra.value = 0;
+  esconder("captura");
+  rodape("vazio");
+  mostrar("envio");
+  esconder("processando");
+  esconder("resultado");
+  document.getElementById("barra").value = 0;
 
   const dados = new FormData();
   dados.append("trecho_id", trechoId);
@@ -187,38 +197,41 @@ function enviar(arquivo) {
   xhr.open("POST", "/videos");
   xhr.upload.onprogress = (evento) => {
     if (evento.lengthComputable) {
-      barra.value = Math.round((evento.loaded / evento.total) * 100);
+      document.getElementById("barra").value = Math.round((evento.loaded / evento.total) * 100);
     }
   };
   xhr.upload.onload = () => {
-    envio.classList.add("escondido");
-    processando.classList.remove("escondido");
+    esconder("envio");
+    mostrar("processando");
     let segundos = 0;
-    const rotulo = document.getElementById("segundos");
     timerRelogio = setInterval(() => {
       segundos += 1;
-      rotulo.textContent = segundos + " s";
+      document.getElementById("segundos").textContent = segundos + " s";
     }, 1000);
   };
   xhr.onload = () => {
     if (xhr.status >= 400) {
       pararRelogio();
-      processando.classList.add("escondido");
+      esconder("processando");
+      const resultado = document.getElementById("resultado");
       resultado.classList.remove("escondido");
       resultado.textContent = "Não foi possível processar. Tente de novo.";
+      rodape("inicio");
       return;
     }
     const corpo = JSON.parse(xhr.responseText);
-    const intervaloMs = (corpo.intervalo_s || 3) * 1000;
-    perguntarAndamento(corpo.codigo, intervaloMs, processando, resultado, pararRelogio);
+    perguntarAndamento(corpo.codigo, (corpo.intervalo_s || 3) * 1000, pararRelogio);
   };
   xhr.onerror = () => {
     pararRelogio();
-    processando.classList.add("escondido");
+    esconder("processando");
+    const resultado = document.getElementById("resultado");
     resultado.classList.remove("escondido");
     resultado.textContent = "Falha de rede.";
+    rodape("inicio");
   };
   xhr.send(dados);
 }
 
+rodape("inicio");
 carregarTrechos();

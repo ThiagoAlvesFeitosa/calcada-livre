@@ -2,45 +2,66 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calçada Livre — gravar trecho</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FIAP Calçada Livre — gravar</title>
   <link rel="stylesheet" href="/estatico/estilos.css">
 </head>
 <body>
-  <header>
-    <h1>Calçada Livre</h1>
-    <nav><a href="/">Gravar</a> <a href="/painel">Mapa</a></nav>
+  <header class="topo">
+    <h1>FIAP Calçada Livre</h1>
+    <nav class="abas">
+      <a href="/" class="ativa" aria-current="page">Gravar</a>
+      <a href="/painel">Mapa</a>
+    </nav>
   </header>
-  <main>
-    <section class="tutorial" id="tutorial">
-      <p id="passo-texto">1. Celular deitado, na altura do peito, apontado para a calçada 3 a 5 m à frente.</p>
-      <button type="button" id="proximo-passo">Próximo</button>
+
+  <main class="conteudo">
+    <section id="inicio" class="centro">
+      <svg class="icone-camera-grande" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M9 3 7.17 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-2a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+      </svg>
+      <p>Para reportar a situação da calçada, clique em gravar.</p>
     </section>
-    <section class="cartao" id="escolha">
-      <button type="button" id="usar-localizacao">Usar minha localização</button>
-      <p id="confirmacao" class="escondido"></p>
-      <p>
-        <button type="button" id="confirmar" class="escondido">Confirmar</button>
-        <button type="button" id="escolher-outro" class="escondido secundario">Escolher outro</button>
-      </p>
-      <p id="rotulo-lista">Ou escolha o trecho na lista:</p>
-      <ul id="lista-trechos"></ul>
-      <p id="trecho-escolhido">Nenhum trecho selecionado.</p>
+
+    <section id="escolha" class="escondido">
+      <p id="voce-esta" class="voce-esta escondido"></p>
+      <p id="mensagem-gps" class="mensagem"></p>
+      <ul id="lista-trechos" class="escondido"></ul>
     </section>
-    <label class="botao">
-      Gravar calçada
-      <input id="video" class="escondido" type="file" accept="video/*" capture="environment">
-    </label>
+
+    <section id="captura" class="escondido">
+      <p class="dica">Celular deitado, na altura do peito, ande devagar, até 30 segundos.</p>
+    </section>
+
     <section id="envio" class="escondido cartao">
       <p>Enviando…</p>
       <progress id="barra" max="100" value="0"></progress>
     </section>
-    <section id="processando" class="escondido processando">
+    <section id="processando" class="escondido cartao">
       <p>Processando o vídeo. Se outro estiver na frente, o seu espera a vez.</p>
       <p id="segundos">0 s</p>
     </section>
-    <section id="resultado" class="escondido resultado"></section>
+    <section id="resultado" class="escondido resultado-nota"></section>
   </main>
+
+  <footer class="rodape">
+    <button type="button" id="btn-gravar" class="botao-principal" aria-label="Gravar calçada">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M9 3 7.17 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+      </svg>
+      Gravar calçada
+    </button>
+    <button type="button" id="confirmar" class="botao-principal escondido">Confirmar</button>
+    <button type="button" id="mudar-endereco" class="secundario escondido">Mudar endereço</button>
+    <label id="btn-camera" class="botao-principal escondido" aria-label="Abrir câmera">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M9 3 7.17 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.17L15 3H9zm3 15a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+      </svg>
+      Abrir câmera
+      <input id="video" class="escondido" type="file" accept="video/*" capture="environment">
+    </label>
+    <a id="btn-mapa" class="botao-principal escondido" href="/painel">Ver no mapa</a>
+  </footer>
   <script src="/estatico/coleta.js"></script>
 </body>
 </html>

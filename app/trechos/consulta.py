@@ -15,6 +15,7 @@ from app.trechos.geometria import (
     comprimento_do_trecho,
     feature_por_id,
     id_da_feature,
+    ponto_na_linha,
 )
 
 
@@ -59,6 +60,31 @@ def nota_do_trecho(
     return calculada
 
 
+def pontos_dos_obstaculos(
+    geometria: dict[str, Any] | None,
+    obstaculos: list[dict[str, Any]],
+    duracao_s: float,
+) -> list[dict[str, Any]]:
+    if not geometria or geometria.get("type") != "LineString":
+        return []
+    coordenadas = geometria.get("coordinates") or []
+    duracao = float(duracao_s or 0)
+    pontos: list[dict[str, Any]] = []
+    for item in obstaculos:
+        instante = float(item.get("instante_s") or 0)
+        fracao = 0.0 if duracao <= 0 else min(max(instante / duracao, 0.0), 1.0)
+        lon, lat = ponto_na_linha(coordenadas, fracao)
+        pontos.append(
+            {
+                "lon": lon,
+                "lat": lat,
+                "classe": nome_em_portugues(str(item.get("classe", ""))),
+                "instante_s": instante,
+            }
+        )
+    return pontos
+
+
 def _obstaculos_por_tipo(obstaculos: list[dict[str, Any]]) -> dict[str, int]:
     contagem: dict[str, int] = {}
     for item in obstaculos:
@@ -92,6 +118,7 @@ def detalhe_do_trecho(
     resultado = armazenamento.ler_json(trecho_id, "resultado.json") or {"obstaculos": []}
     obstaculos = list(resultado.get("obstaculos", []))
     nota = nota_do_trecho(armazenamento, colecao, trecho_id)
+    duracao = float(resultado.get("duracao_s") or 0)
     return {
         "id": trecho_id,
         "nome": propriedades.get("nome", trecho_id),
@@ -104,6 +131,7 @@ def detalhe_do_trecho(
         "obstaculos_por_tipo": _obstaculos_por_tipo(obstaculos) if nota is not None else {},
         "quadros": _tres_quadros(armazenamento, trecho_id) if nota is not None else [],
         "obstaculos": obstaculos if nota is not None else [],
+        "duracao_s": duracao if nota is not None else None,
     }
 
 
@@ -126,6 +154,13 @@ def geojson_com_notas(armazenamento: Armazenamento, colecao: dict[str, Any]) -> 
             propriedades["data"] = nota.get("data")
             propriedades["filmado"] = True
             propriedades["obstaculos_por_100m"] = nota.get("obstaculos_por_100m")
+            resultado = armazenamento.ler_json(trecho_id, "resultado.json") or {}
+            obstaculos = list(resultado.get("obstaculos", []))
+            duracao = float(resultado.get("duracao_s") or 0)
+            propriedades["duracao_s"] = duracao
+            propriedades["pontos_obstaculos"] = pontos_dos_obstaculos(
+                copia.get("geometry"), obstaculos, duracao
+            )
         copia["properties"] = propriedades
         saida["features"].append(copia)
     return saida

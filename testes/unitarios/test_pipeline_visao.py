@@ -61,6 +61,7 @@ def test_objeto_fora_da_calcada_nao_conta_como_obstaculo(tmp_path: Path) -> None
     assert obstaculo["classe"] == "tree"
     assert "ocupacao_faixa" in obstaculo
     assert obstaculo["ocupacao_faixa"] > 0
+    assert "duracao_s" in resultado
 
 
 def test_deteccoes_brutas_guardam_o_que_fica_fora_do_filtro(tmp_path: Path) -> None:

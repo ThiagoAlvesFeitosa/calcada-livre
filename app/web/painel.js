@@ -1,10 +1,14 @@
-const cores = { verde: "#2e7d32", amarelo: "#f9a825", vermelho: "#c62828", cinza: "#9e9e9e" };
+function corCss(nome) {
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
 
-function corLinha(propriedades) {
-  if (!propriedades.filmado || !propriedades.cor) {
-    return cores.cinza;
-  }
-  return cores[propriedades.cor] || cores.cinza;
+function corLinha(cor) {
+  const chave = {
+    verde: "--nota-verde",
+    amarelo: "--nota-amarelo",
+    vermelho: "--nota-vermelho",
+  }[cor];
+  return chave ? corCss(chave) : corCss("--cinza");
 }
 
 function listaTipos(porTipo) {
@@ -21,65 +25,82 @@ function listaTipos(porTipo) {
   );
 }
 
+function abrirFicha(html) {
+  const ficha = document.getElementById("ficha");
+  ficha.hidden = false;
+  ficha.classList.remove("escondido");
+  ficha.innerHTML = html;
+}
+
 async function mostrarDetalhe(trechoId) {
   const detalhe = await fetch("/trechos/" + encodeURIComponent(trechoId)).then((r) => r.json());
-  const caixa = document.getElementById("detalhe");
-  caixa.classList.remove("escondido");
   if (detalhe.nota === null) {
-    caixa.innerHTML = "<p><strong>" + detalhe.nome + "</strong></p><p>Ainda não filmado.</p>";
     return;
   }
   const fotos = (detalhe.quadros || [])
-    .map((url) => '<img src="' + url + '" alt="Quadro anotado">')
+    .map((url) => '<img src="' + url + '" alt="Quadro anotado da calçada">')
     .join("");
-  caixa.innerHTML =
-    "<p><strong>" +
-    detalhe.nome +
-    '</strong></p><p class="nota ' +
-    detalhe.cor +
-    '">' +
-    detalhe.nota +
-    "</p><p>Cor: " +
-    detalhe.cor +
-    "</p><p>Data: " +
-    (detalhe.data || "—") +
-    "</p>" +
-    listaTipos(detalhe.obstaculos_por_tipo) +
-    '<div class="quadros">' +
-    fotos +
-    "</div>";
+  abrirFicha(
+    "<h2>" +
+      detalhe.nome +
+      '</h2><p class="nota ' +
+      detalhe.cor +
+      '">' +
+      detalhe.nota +
+      "</p>" +
+      listaTipos(detalhe.obstaculos_por_tipo) +
+      "<p>Data: " +
+      (detalhe.data || "—") +
+      "</p>" +
+      '<div class="quadros">' +
+      fotos +
+      "</div>"
+  );
 }
 
 async function iniciar() {
-  const mapa = L.map("mapa").setView([-22.2175, -49.9463], 18);
+  const mapa = L.map("mapa", { zoomControl: true }).setView([-22.2175, -49.9463], 18);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap",
   }).addTo(mapa);
 
-  const [geojson, censo] = await Promise.all([
-    fetch("/trechos").then((r) => r.json()),
-    fetch("/censo").then((r) => r.json()),
-  ]);
+  const geojson = await fetch("/trechos").then((r) => r.json());
+  const filmados = {
+    type: "FeatureCollection",
+    features: (geojson.features || []).filter((feature) => feature.properties && feature.properties.filmado),
+  };
 
-  document.getElementById("censo").innerHTML =
-    "<p>Trechos filmados sem obstáculo no caminho: <strong>" +
-    censo.sem_obstaculo +
-    " de " +
-    censo.filmados +
-    "</strong></p><p>Censo 2022, Marília: <strong>46,4%</strong> dos moradores em calçada desobstruída</p>" +
-    '<p class="legenda">referência; não é a mesma medida</p>';
-
-  const camada = L.geoJSON(geojson, {
-    style: (feature) => ({ color: corLinha(feature.properties), weight: 7 }),
+  const espessura = Number(corCss("--espessura-linha")) || 8;
+  const vermelho = corCss("--nota-vermelho");
+  const camada = L.geoJSON(filmados, {
+    style: (feature) => ({
+      color: corLinha(feature.properties.cor),
+      weight: espessura,
+      opacity: 1,
+    }),
     onEachFeature: (feature, layer) => {
       layer.on("click", () => {
-        const id = feature.properties.id || feature.id;
-        mostrarDetalhe(id);
+        mostrarDetalhe(feature.properties.id || feature.id);
       });
     },
   }).addTo(mapa);
+
+  filmados.features.forEach((feature) => {
+    (feature.properties.pontos_obstaculos || []).forEach((ponto) => {
+      L.circleMarker([ponto.lat, ponto.lon], {
+        radius: 7,
+        color: vermelho,
+        fillColor: vermelho,
+        fillOpacity: 1,
+        weight: 1,
+      })
+        .addTo(mapa)
+        .on("click", () => mostrarDetalhe(feature.properties.id || feature.id));
+    });
+  });
+
   if (camada.getBounds().isValid()) {
-    mapa.fitBounds(camada.getBounds(), { padding: [20, 20] });
+    mapa.fitBounds(camada.getBounds(), { padding: [40, 40], maxZoom: 19 });
   }
 }
 

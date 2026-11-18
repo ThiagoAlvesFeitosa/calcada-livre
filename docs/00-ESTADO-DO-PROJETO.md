@@ -2,6 +2,22 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — layout gravar e mapa
+
+Topo azul com “FIAP Calçada Livre”, abas Gravar/Mapa. Gravar: câmera no centro, botão fixo embaixo
+(56 px). Fluxo GPS → “Você está em…” → Confirmar/Mudar endereço → dica → Abrir câmera → nota +
+Ver no mapa. Mapa só com trechos filmados (linha 8 px), pontos vermelhos pelo instante do vídeo,
+ficha por baixo, sem Censo. `duracao_s` no resultado.json. Commit só com o Thiago.
+
+## Situação em 18/11/2026 — ajuste de tela (gravar e painel)
+
+Gravar: primeira tela só título, frase e botão grande com ícone de câmera (SVG no HTML). Ao
+tocar, pede GPS. Trecho até 50 m em destaque, Confirmar / Mudar endereço. Sem GPS ou longe:
+“Não achamos um trecho cadastrado perto de você” e a lista. Depois da confirmação: uma linha de
+dica e o botão da câmera. Paleta em variáveis CSS (`#1F4E79`, `#F2B705`, `#F7F6F2`…). Verde,
+amarelo e vermelho só nas notas. Botões ≥ 48 px, fonte 18 px. Commit da F2.1 já no GitHub
+(`dd10716`). Este ajuste de tela: commit só com o Thiago.
+
 ## Situação em 18/11/2026 — F2.1 caminho B (túnel + Supabase)
 
 Hugging Face Docker ficou pago. A visão roda no computador; o celular entra pelo Cloudflare
@@ -9,8 +25,7 @@ Tunnel (https); notas e quadros com mosaico vão para um bucket privado no Supab
 não sobe. Chaves só no `.env`. Painel lê pelo servidor. POST devolve código na hora; a página
 pergunta a cada 3 s. Uma trava: um vídeo por vez. Limite 95 MB; tutorial 30 s. Script
 `scripts/subir_existentes.py` para os trechos já em `saida/`. ADR-006 atualizado; Dockerfile
-fica para a Azure. `uv run pytest`: 31 testes. Commit só com o Thiago; mensagem prevista:
-`F2.1: tunel Cloudflare e Supabase`.
+fica para a Azure. `uv run pytest`: 31 testes. Commit: `F2.1: tunel Cloudflare e Supabase`.
 
 Próximo passo: `cloudflared tunnel --url http://127.0.0.1:8000` e teste no celular. Depois F2.2
 se o prazo deixar.

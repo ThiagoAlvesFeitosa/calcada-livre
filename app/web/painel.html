@@ -2,20 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calçada Livre — mapa</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>FIAP Calçada Livre — mapa</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/estatico/estilos.css">
 </head>
-<body>
-  <header>
-    <h1>Mapa do quarteirão</h1>
-    <nav><a href="/">Gravar</a> <a href="/painel">Mapa</a></nav>
+<body class="pagina-mapa">
+  <header class="topo">
+    <h1>FIAP Calçada Livre</h1>
+    <nav class="abas">
+      <a href="/">Gravar</a>
+      <a href="/painel" class="ativa" aria-current="page">Mapa</a>
+    </nav>
   </header>
-  <main>
-    <div id="mapa" class="mapa" style="height: 360px;"></div>
-    <section class="cartao" id="censo"></section>
-    <section class="cartao escondido" id="detalhe"></section>
+  <main class="conteudo-mapa">
+    <div id="mapa" class="mapa-tela"></div>
+    <div class="legenda-mapa" aria-label="Legenda">
+      <span><i class="livre"></i> livre</span>
+      <span><i class="atencao"></i> atenção</span>
+      <span><i class="obstruida"></i> obstruída</span>
+    </div>
+    <aside id="ficha" class="ficha escondido" hidden></aside>
   </main>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/estatico/painel.js"></script>
