@@ -10,11 +10,12 @@ import numpy as np
 from app.portas.detector import Caixa, Detector
 from app.visao.parametros import (
     CLASSES_FORA_DA_CONTAGEM,
-    CONFIANCA_MINIMA_OBSTACULO,
+    FRACAO_CAMINHO_INFERIOR,
     PIXELS_DILATACAO_CALCADA,
     QUADROS_POR_SEGUNDO,
     SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE,
     classe_nossa,
+    confianca_minima,
 )
 from app.visao.privacidade import borrar_pessoas_e_placas
 
@@ -49,16 +50,31 @@ def base_na_calcada(caixa: Caixa, mascara: np.ndarray) -> bool:
     return bool(mascara[y_base, x_meio])
 
 
+def mascara_caminho(mascara: np.ndarray, fracao_inferior: float = FRACAO_CAMINHO_INFERIOR) -> np.ndarray:
+    caminho = mascara.astype(bool).copy()
+    if caminho.size == 0:
+        return caminho
+    altura = caminho.shape[0]
+    limite = int(altura * (1.0 - fracao_inferior))
+    caminho[:limite, :] = False
+    return caminho
+
+
+def base_no_caminho(caixa: Caixa, mascara: np.ndarray) -> bool:
+    return base_na_calcada(caixa, mascara_caminho(mascara))
+
+
 def ocupacao_na_faixa(caixa: Caixa, mascara: np.ndarray) -> float:
-    altura, largura = mascara.shape[:2]
+    caminho = mascara_caminho(mascara)
+    altura, largura = caminho.shape[:2]
     _, y_base = _ponto_base(caixa, altura, largura)
     x1 = min(max(int(caixa.x1), 0), largura)
     x2 = min(max(int(caixa.x2), 0), largura)
     largura_caixa = max(x2 - x1, 0)
-    largura_calcada = int(np.count_nonzero(mascara[y_base]))
-    if largura_calcada == 0:
+    largura_caminho = int(np.count_nonzero(caminho[y_base]))
+    if largura_caminho == 0:
         return 0.0
-    return min(largura_caixa / largura_calcada, 1.0)
+    return min(largura_caixa / largura_caminho, 1.0)
 
 
 def _juntar(existentes: list[Obstaculo], novo: Obstaculo) -> None:
@@ -86,7 +102,7 @@ def _eh_obstaculo(caixa: Caixa) -> bool:
     classe = classe_nossa(caixa.classe)
     if classe in CLASSES_FORA_DA_CONTAGEM:
         return False
-    return caixa.confianca >= CONFIANCA_MINIMA_OBSTACULO
+    return caixa.confianca >= confianca_minima(classe)
 
 
 def _anotar(quadro: np.ndarray, caixas: list[Caixa]) -> np.ndarray:
@@ -159,7 +175,7 @@ def processar_quadros(
         for caixa in caixas:
             if not _eh_obstaculo(caixa):
                 continue
-            if not base_na_calcada(caixa, mascara):
+            if not base_no_caminho(caixa, mascara):
                 continue
             caixas_obstaculo.append(caixa)
             _juntar(

@@ -27,18 +27,28 @@ def _formatar_tempo(segundos: float) -> str:
 
 def main() -> int:
     if len(sys.argv) < 2:
-        print("Uso: uv run python scripts/processar.py CAMINHO.mp4")
+        print("Uso: uv run python scripts/processar.py CAMINHO.mp4 [arquivo-yolo.pt]")
         return 1
     caminho = Path(sys.argv[1])
     if not caminho.exists():
         print(f"Arquivo não encontrado: {caminho}")
         return 1
+    arquivo_yolo = sys.argv[2] if len(sys.argv) > 2 else None
 
     inicio = time.perf_counter()
     print("Carregando modelos (primeira vez baixa os pesos para modelos/)...")
-    detector = DetectorReal()
+    detector = DetectorReal(arquivo_yolo=arquivo_yolo)
     pasta_saida = obter_configuracao().pasta_saida
-    resultado = processar_video(caminho, detector, pasta_saida)
+    identificador = caminho.stem
+    if arquivo_yolo:
+        nome = Path(arquivo_yolo).stem
+        if "yolov8s" in nome:
+            identificador = f"{caminho.stem}-s"
+        elif "yolov8m" in nome:
+            identificador = f"{caminho.stem}-m"
+        else:
+            identificador = f"{caminho.stem}-{nome}"
+    resultado = processar_video(caminho, detector, pasta_saida, identificador=identificador)
     duracao = time.perf_counter() - inicio
 
     obstaculos = resultado["obstaculos"]
@@ -53,7 +63,7 @@ def main() -> int:
                 f"   ocupacao {item['ocupacao_faixa']:.2f}"
             )
     print(f"Tempo total: {_formatar_tempo(duracao)}")
-    print(f"Resultado em {Path(pasta_saida) / caminho.stem}")
+    print(f"Resultado em {Path(pasta_saida) / identificador}")
     return 0
 
 

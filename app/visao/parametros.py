@@ -2,12 +2,15 @@ QUADROS_POR_SEGUNDO = 2
 
 PIXELS_DILATACAO_CALCADA = 24
 
-CONFIANCA_MINIMA_OBSTACULO = 0.12
+CONFIANCA_MINIMA_OBSTACULO = 0.25
 CONFIANCA_MINIMA_PRIVACIDADE = 0.08
+CONFIANCA_MINIMA_POR_CLASSE: dict[str, float] = {}
 
 FRACAO_INFERIOR_VEICULO = 0.55
+FRACAO_CAMINHO_INFERIOR = 0.45
 
 SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE = 1.5
+SEGUNDOS_TOLERANCIA_GABARITO = 2.0
 
 TAMANHO_DESFOQUE = 21
 
@@ -19,7 +22,8 @@ ARQUIVO_YOLO_WORLD = "yolov8s-worldv2.pt"
 
 CLASSES_PRIVACIDADE = frozenset({"person", "license plate"})
 CLASSES_VEICULO = frozenset({"car", "motorcycle"})
-CLASSES_FORA_DA_CONTAGEM = CLASSES_PRIVACIDADE | CLASSES_VEICULO
+CLASSES_IGNORADAS = frozenset({"bench", "sign"})
+CLASSES_FORA_DA_CONTAGEM = CLASSES_PRIVACIDADE | CLASSES_VEICULO | CLASSES_IGNORADAS
 
 MAPA_CLASSES: dict[str, list[str]] = {
     "pole": ["pole", "concrete pillar", "Y-shaped pole"],
@@ -50,7 +54,9 @@ MAPA_CLASSES: dict[str, list[str]] = {
 
 def nomes_para_yolo() -> list[str]:
     nomes: list[str] = []
-    for variantes in MAPA_CLASSES.values():
+    for canonico, variantes in MAPA_CLASSES.items():
+        if canonico in CLASSES_IGNORADAS:
+            continue
         nomes.extend(variantes)
     return nomes
 
@@ -61,3 +67,9 @@ def classe_nossa(nome: str) -> str:
         if chave == canonico or chave in variantes:
             return canonico
     return chave
+
+
+def confianca_minima(classe: str) -> float:
+    return CONFIANCA_MINIMA_POR_CLASSE.get(classe_nossa(classe), CONFIANCA_MINIMA_OBSTACULO)
+
+

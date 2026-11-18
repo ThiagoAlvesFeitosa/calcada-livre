@@ -1,0 +1,20 @@
+{
+  "trechos": {
+    "marilia_2026-11-17_trecho-01": {
+      "obstaculos": []
+    },
+    "marilia_2026-11-17_trecho-02": {
+      "obstaculos": [
+        {"id": 1, "classes": ["tree"], "inicio_s": 2, "fim_s": 5},
+        {"id": 2, "classes": ["cardboard box"], "inicio_s": 2, "fim_s": 6},
+        {"id": 3, "classes": ["trash bin"], "inicio_s": 4, "fim_s": 7},
+        {"id": 4, "classes": ["construction debris"], "inicio_s": 6, "fim_s": 10},
+        {"id": 5, "classes": ["pole"], "inicio_s": 7, "fim_s": 12},
+        {"id": 6, "classes": ["construction debris"], "inicio_s": 15, "fim_s": 17},
+        {"id": 7, "classes": ["sand pile", "bricks"], "inicio_s": 12, "fim_s": 20},
+        {"id": 8, "classes": ["construction debris"], "inicio_s": 18, "fim_s": 23},
+        {"id": 9, "classes": ["construction debris"], "inicio_s": 19, "fim_s": 24}
+      ]
+    }
+  }
+}

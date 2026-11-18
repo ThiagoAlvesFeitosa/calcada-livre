@@ -12,10 +12,10 @@ from app.visao.segmentacao import SegmentadorCalcada
 
 
 class DetectorReal:
-    def __init__(self, pasta_modelos: Path | None = None) -> None:
+    def __init__(self, pasta_modelos: Path | None = None, arquivo_yolo: str | None = None) -> None:
         pasta = pasta_modelos or preparar_pastas_modelos()
         self.segmentador = SegmentadorCalcada()
-        self.detector = DetectorObstaculos(pasta)
+        self.detector = DetectorObstaculos(pasta, arquivo_yolo=arquivo_yolo)
 
     def analisar(self, quadro: np.ndarray, instante_s: float) -> ResultadoQuadro:
         del instante_s

@@ -62,6 +62,44 @@ def test_objeto_fora_da_calcada_nao_conta_como_obstaculo(tmp_path: Path) -> None
     assert obstaculo["ocupacao_faixa"] > 0
 
 
+def test_objeto_fora_do_caminho_nao_conta_como_obstaculo(tmp_path: Path) -> None:
+    # preparar
+    quadro = _quadro_cinza()
+    mascara = _mascara_metade_de_baixo()
+    no_alto_da_calcada = Caixa(
+        classe="tree",
+        confianca=0.9,
+        x1=10,
+        y1=40,
+        x2=20,
+        y2=42,
+        id_rastreio=1,
+    )
+    no_caminho = Caixa(
+        classe="pole",
+        confianca=0.9,
+        x1=30,
+        y1=55,
+        x2=40,
+        y2=75,
+        id_rastreio=2,
+    )
+    detector = DetectorFalso(
+        [ResultadoQuadro(mascara_calcada=mascara, caixas=[no_alto_da_calcada, no_caminho])]
+    )
+
+    # executar
+    resultado = processar_quadros(
+        [(quadro, 0.0)],
+        detector,
+        pasta_saida=tmp_path,
+        identificador="teste-caminho",
+    )
+
+    # verificar
+    assert [item["classe"] for item in resultado["obstaculos"]] == ["pole"]
+
+
 def test_quadro_salvo_tem_pessoas_e_placas_borradas(tmp_path: Path) -> None:
     # preparar
     quadro = _quadro_cinza()

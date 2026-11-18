@@ -2,6 +2,35 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — ajuste da visão (caminho + avaliador)
+
+F0.2 já está no GitHub (`14a883e`). Esta rodada (cerca de 1 h) acrescentou `dados/gabarito.json`,
+`scripts/avaliar.py` (acertos por posição, com qualquer classe, e acertos com a classe certa;
+casamento ±2 s, uma marcação para um item) e o recorte do **caminho**: só conta obstáculo cuja base
+está nos 45% de baixo do quadro. `ocupacao_faixa` usa a largura dessa faixa, não a máscara inteira.
+Confiança mínima de obstáculo 0,25; `bench` e `sign` saíram da lista. `uv run pytest`: 9 testes.
+
+Rodada s vs m (CPU), mesmos filtros:
+
+| Modelo | Trecho | Marcações | Acertos posição | Acertos classe | FP | Prec. pos. | Rev. pos. | Tempo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| yolov8s | 02 | 1 | 1 | 1 | 0 | 100% | 11% | 1 min |
+| yolov8s | 01 | 0 | — | — | 0 | — | — | 24 s |
+| yolov8m | 02 | 1 | 1 | 1 | 0 | 100% | 11% | 1 min 10 s |
+| yolov8m | 01 | 0 | — | — | 0 | — | — | 26 s |
+
+Os dois modelos acharam só a caixa de papelão no 02 e zeraram o 01 (controle limpo). **Fica o s**
+(`ARQUIVO_YOLO_WORLD = yolov8s-worldv2.pt`): mesmo resultado, um pouco mais rápido. O m não recuperou
+entulho, areia nem o pilar com confiança 0,25. Revocação 1/9: o caminho e o limiar cortaram falsos
+positivos e também os acertos fracos da F0.2. Plano B (Roboflow / treino em Marília) continua
+necessário se a demo precisar dos 9 obstáculos.
+
+Como avaliar: `uv run python scripts/avaliar.py saida/<id>/resultado.json`.
+
+Pendente: commit deste ajuste (aguardar o Thiago confirmar).
+
+Próximo passo: F1.1 (nota por trecho), usando `ocupacao_faixa` do caminho.
+
 ## Situação em 17/11/2026 — F0.2 pipeline de visão
 
 O comando `uv run python scripts/processar.py ../videos/marilia_2026-11-17_trecho-02.mp4` gera

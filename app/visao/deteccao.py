@@ -12,20 +12,21 @@ from app.visao.parametros import (
 
 
 class DetectorObstaculos:
-    def __init__(self, pasta_modelos: Path) -> None:
+    def __init__(self, pasta_modelos: Path, arquivo_yolo: str | None = None) -> None:
         settings.update(
             {
                 "weights_dir": str(pasta_modelos),
                 "runs_dir": str(pasta_modelos / "runs"),
             }
         )
-        caminho = pasta_modelos / ARQUIVO_YOLO_WORLD
-        for origem in (Path(ARQUIVO_YOLO_WORLD), pasta_modelos.parent / ARQUIVO_YOLO_WORLD):
+        arquivo = arquivo_yolo or ARQUIVO_YOLO_WORLD
+        caminho = pasta_modelos / arquivo
+        for origem in (Path(arquivo), pasta_modelos.parent / arquivo):
             if origem.exists() and origem.resolve() != caminho.resolve():
                 caminho.parent.mkdir(parents=True, exist_ok=True)
                 origem.replace(caminho)
-        self.modelo = YOLO(str(caminho) if caminho.exists() else ARQUIVO_YOLO_WORLD)
-        baixado = Path(ARQUIVO_YOLO_WORLD)
+        self.modelo = YOLO(str(caminho) if caminho.exists() else arquivo)
+        baixado = Path(arquivo)
         if baixado.exists() and baixado.resolve() != caminho.resolve():
             caminho.parent.mkdir(parents=True, exist_ok=True)
             baixado.replace(caminho)
