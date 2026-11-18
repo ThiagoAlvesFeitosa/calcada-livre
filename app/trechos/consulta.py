@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from app.nota.parametros import FUSO_BRASILIA, QUADROS_NO_DETALHE
 from app.nota.regras import calcular_nota
+from app.portas.armazenamento import Armazenamento
 from app.visao.parametros import nome_em_portugues
 from app.trechos.geometria import (
     carregar_colecao,
@@ -15,16 +16,6 @@ from app.trechos.geometria import (
     feature_por_id,
     id_da_feature,
 )
-
-
-def _pasta_trecho(pasta_saida: Path, trecho_id: str) -> Path:
-    return pasta_saida / trecho_id
-
-
-def _ler_json(caminho: Path) -> dict[str, Any] | None:
-    if not caminho.exists():
-        return None
-    return json.loads(caminho.read_text(encoding="utf-8"))
 
 
 def formatar_data_brasilia(valor: str | datetime | None) -> str | None:
@@ -45,34 +36,26 @@ def formatar_data_brasilia(valor: str | datetime | None) -> str | None:
     return momento.astimezone(ZoneInfo(FUSO_BRASILIA)).strftime("%d/%m/%Y %H:%M")
 
 
-def _data_da_varredura(pasta: Path, nota: dict[str, Any] | None) -> str | None:
-    if nota and nota.get("data"):
-        return formatar_data_brasilia(str(nota["data"]))
-    resultado = pasta / "resultado.json"
-    if resultado.exists():
-        return formatar_data_brasilia(
-            datetime.fromtimestamp(resultado.stat().st_mtime, tz=timezone.utc)
-        )
-    return None
-
-
-def nota_do_trecho(pasta_saida: Path, colecao: dict[str, Any], trecho_id: str) -> dict[str, Any] | None:
-    pasta = _pasta_trecho(pasta_saida, trecho_id)
+def nota_do_trecho(
+    armazenamento: Armazenamento,
+    colecao: dict[str, Any],
+    trecho_id: str,
+) -> dict[str, Any] | None:
     comprimento = comprimento_do_trecho(colecao, trecho_id)
     if comprimento <= 0:
         return None
-    gravada = _ler_json(pasta / "nota.json")
+    gravada = armazenamento.ler_json(trecho_id, "nota.json")
     if gravada:
         gravada = dict(gravada)
         gravada["comprimento_m"] = comprimento
         gravada["data"] = formatar_data_brasilia(gravada.get("data"))
         return gravada
-    resultado = _ler_json(pasta / "resultado.json")
+    resultado = armazenamento.ler_json(trecho_id, "resultado.json")
     if resultado is None:
         return None
     calculada = calcular_nota(list(resultado.get("obstaculos", [])), comprimento)
     calculada["comprimento_m"] = comprimento
-    calculada["data"] = _data_da_varredura(pasta, None)
+    calculada["data"] = None
     return calculada
 
 
@@ -84,8 +67,8 @@ def _obstaculos_por_tipo(obstaculos: list[dict[str, Any]]) -> dict[str, int]:
     return contagem
 
 
-def _tres_quadros(pasta: Path, trecho_id: str) -> list[str]:
-    arquivos = sorted((pasta / "quadros").glob("*.png"))
+def _tres_quadros(armazenamento: Armazenamento, trecho_id: str) -> list[str]:
+    arquivos = armazenamento.listar_quadros(trecho_id)
     if not arquivos:
         return []
     if len(arquivos) <= QUADROS_NO_DETALHE:
@@ -94,18 +77,21 @@ def _tres_quadros(pasta: Path, trecho_id: str) -> list[str]:
         ultimo = len(arquivos) - 1
         indices = [round(i * ultimo / (QUADROS_NO_DETALHE - 1)) for i in range(QUADROS_NO_DETALHE)]
         escolhidos = [arquivos[indice] for indice in indices]
-    return [f"/quadros/{trecho_id}/{arquivo.name}" for arquivo in escolhidos]
+    return [f"/quadros/{trecho_id}/{arquivo}" for arquivo in escolhidos]
 
 
-def detalhe_do_trecho(pasta_saida: Path, colecao: dict[str, Any], trecho_id: str) -> dict[str, Any] | None:
+def detalhe_do_trecho(
+    armazenamento: Armazenamento,
+    colecao: dict[str, Any],
+    trecho_id: str,
+) -> dict[str, Any] | None:
     feature = feature_por_id(colecao, trecho_id)
     if feature is None:
         return None
     propriedades = feature.get("properties") or {}
-    pasta = _pasta_trecho(pasta_saida, trecho_id)
-    resultado = _ler_json(pasta / "resultado.json") or {"obstaculos": []}
+    resultado = armazenamento.ler_json(trecho_id, "resultado.json") or {"obstaculos": []}
     obstaculos = list(resultado.get("obstaculos", []))
-    nota = nota_do_trecho(pasta_saida, colecao, trecho_id)
+    nota = nota_do_trecho(armazenamento, colecao, trecho_id)
     return {
         "id": trecho_id,
         "nome": propriedades.get("nome", trecho_id),
@@ -116,19 +102,19 @@ def detalhe_do_trecho(pasta_saida: Path, colecao: dict[str, Any], trecho_id: str
         "obstaculos_por_100m": None if nota is None else nota.get("obstaculos_por_100m"),
         "faixa_livre_media": None if nota is None else nota.get("faixa_livre_media"),
         "obstaculos_por_tipo": _obstaculos_por_tipo(obstaculos) if nota is not None else {},
-        "quadros": _tres_quadros(pasta, trecho_id) if nota is not None else [],
+        "quadros": _tres_quadros(armazenamento, trecho_id) if nota is not None else [],
         "obstaculos": obstaculos if nota is not None else [],
     }
 
 
-def geojson_com_notas(pasta_saida: Path, colecao: dict[str, Any]) -> dict[str, Any]:
+def geojson_com_notas(armazenamento: Armazenamento, colecao: dict[str, Any]) -> dict[str, Any]:
     saida = {"type": "FeatureCollection", "features": []}
     for feature in colecao.get("features", []):
         trecho_id = id_da_feature(feature)
         copia = json.loads(json.dumps(feature))
         propriedades = dict(copia.get("properties") or {})
         propriedades["id"] = trecho_id
-        nota = nota_do_trecho(pasta_saida, colecao, trecho_id) if trecho_id else None
+        nota = nota_do_trecho(armazenamento, colecao, trecho_id) if trecho_id else None
         if nota is None:
             propriedades["nota"] = None
             propriedades["cor"] = None
@@ -145,12 +131,12 @@ def geojson_com_notas(pasta_saida: Path, colecao: dict[str, Any]) -> dict[str, A
     return saida
 
 
-def resumo_censo(pasta_saida: Path, colecao: dict[str, Any]) -> dict[str, int]:
+def resumo_censo(armazenamento: Armazenamento, colecao: dict[str, Any]) -> dict[str, int]:
     filmados = 0
     sem_obstaculo = 0
     for feature in colecao.get("features", []):
         trecho_id = id_da_feature(feature)
-        resultado = _ler_json(_pasta_trecho(pasta_saida, trecho_id) / "resultado.json")
+        resultado = armazenamento.ler_json(trecho_id, "resultado.json")
         if resultado is None:
             continue
         filmados += 1

@@ -100,13 +100,12 @@ em `app/nota/parametros.py`:
 
 ### 3.7 Nuvem
 
-- Hugging Face Spaces (Docker, CPU grátis): roda a API, os modelos e serve as páginas na porta 7860.
-- Pesos do SegFormer, YOLO-World e CLIP entram na imagem no `docker build`; não vão para o Git.
-- Nesta fatia o armazenamento no Space é a pasta `saida/` no disco do container (ADR-006).
-- Supabase (Postgres + Storage) fica para depois; a interface de armazenamento continua pronta para
-  essa troca.
+- Caminho B (ADR-006): API e modelos neste computador; link público https pelo Cloudflare Tunnel;
+  resultados no Supabase Storage (bucket privado).
+- O painel lê o Storage **pelo servidor**; a chave não vai para o navegador.
+- O `Dockerfile` (Python 3.11, uv, PyTorch CPU, porta 7860) fica no repositório para a Azure.
 - Detector (real ou falso para teste) e laudo (`llm`, `modelo_fixo` ou falso para teste) já são
-  trocáveis.
+  trocáveis. Armazenamento: `local` ou `supabase`, pela mesma porta.
 
 ## 4. Decisões (ADR)
 
@@ -168,21 +167,20 @@ na regra da nota. Sem Spec Kit, sem constituição e sem os documentos 01 a 04.
 **Consequências.** *Aceitas:* menos garantia de qualidade fora da nota. *Ganhas:* demo pronta para
 gravar na quarta.
 
-### ADR-006 — Disco local no Space nesta fatia
+### ADR-006 — Túnel no computador + Supabase (caminho B)
 
-**Contexto.** A F2.1 do backlog previa Supabase junto com o Space. O prazo da GS2 é curto; o
-adaptador de nuvem ainda não está escrito.
+**Contexto.** O Space Docker do Hugging Face passou a ser pago. O prazo da GS2 não cabe em outra
+nuvem completa agora.
 
-**Decisão.** Publicar só o Space Docker (CPU grátis). Notas, quadros e JSON ficam em `saida/` no
-disco do container. Pesos dos modelos vêm na imagem (baixados no `docker build`). O token do
-Hugging Face fica só no computador de quem publica, nunca no repositório.
+**Decisão.** A visão roda no computador. O celular entra por Cloudflare Tunnel (https, GPS).
+Notas, `resultado.json` e quadros com mosaico ficam num bucket **privado** do Supabase Storage.
+O vídeo bruto não sobe. O `Dockerfile` permanece pronto para a Azure depois.
 
-**Alternativas.** Implementar o adaptador Supabase agora (ADR-003 completo); volume `/data` pago
-no Space.
+**Alternativas.** Pagar o Space; só disco local (mapa cinza se o PC reinicia e não há `saida/`).
 
-**Consequências.** *Aceitas:* quando o Space gratuito reinicia, os resultados somem e o mapa volta
-cinza até filmar de novo; os pesos na imagem não precisam baixar outra vez. *Ganhas:* link público
-https (GPS no celular) no prazo, sem Redis, fila nem banco.
+**Consequências.** *Aceitas:* o PC precisa estar ligado; o link rápido do `cloudflared` muda a
+cada execução; o túnel corta resposta longa (~100 s) e envio grande (~100 MB). *Ganhas:* https
+com GPS, resultados que não somem ao fechar o túnel, custo zero no prazo.
 
 ## 5. Fora da demo (roadmap)
 

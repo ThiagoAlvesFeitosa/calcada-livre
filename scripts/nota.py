@@ -8,7 +8,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 if str(RAIZ) not in sys.path:
     sys.path.insert(0, str(RAIZ))
 
-from app.config import obter_configuracao
+from app.config import criar_armazenamento, obter_configuracao
 from app.nota.regras import calcular_nota
 from app.trechos.consulta import carregar_trechos, nota_do_trecho
 from app.trechos.geometria import comprimento_do_trecho, ids_dos_trechos
@@ -28,7 +28,7 @@ def _mostrar(nome: str, comprimento_m: float, resultado: dict) -> None:
 def main() -> int:
     configuracao = obter_configuracao()
     colecao = carregar_trechos(configuracao.caminho_trechos)
-    pasta_saida = Path(configuracao.pasta_saida)
+    armazenamento = criar_armazenamento(configuracao)
 
     if len(sys.argv) >= 3:
         caminho = Path(sys.argv[1])
@@ -41,11 +41,11 @@ def main() -> int:
 
     faltando = False
     for trecho in sorted(ids_dos_trechos(colecao)):
-        nota = nota_do_trecho(pasta_saida, colecao, trecho)
+        nota = nota_do_trecho(armazenamento, colecao, trecho)
         if nota is None:
             continue
         _mostrar(trecho, comprimento_do_trecho(colecao, trecho), nota)
-    if not any(nota_do_trecho(pasta_saida, colecao, trecho) for trecho in ids_dos_trechos(colecao)):
+    if not any(nota_do_trecho(armazenamento, colecao, trecho) for trecho in ids_dos_trechos(colecao)):
         print("Nenhum trecho com resultado.json.")
         faltando = True
     return 1 if faltando else 0

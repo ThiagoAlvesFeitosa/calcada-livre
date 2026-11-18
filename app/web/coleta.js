@@ -1,7 +1,7 @@
 const passos = [
   "1. Celular deitado, na altura do peito, apontado para a calçada 3 a 5 m à frente.",
   "2. Ande devagar e sem parar.",
-  "3. Um vídeo por face de quadra, até 60 segundos.",
+  "3. Um vídeo por face de quadra, até 30 segundos.",
 ];
 
 let passoAtual = 0;
@@ -125,6 +125,42 @@ document.getElementById("video").addEventListener("change", (evento) => {
   enviar(arquivo);
 });
 
+function mostrarNota(corpo, processando, resultado) {
+  processando.classList.add("escondido");
+  resultado.classList.remove("escondido");
+  resultado.innerHTML =
+    '<p>Nota</p><p class="nota ' +
+    corpo.cor +
+    '">' +
+    corpo.nota +
+    "</p><p>Cor: " +
+    corpo.cor +
+    "</p><p>Obstáculos por 100 m: " +
+    Number(corpo.obstaculos_por_100m).toFixed(1) +
+    "</p>";
+}
+
+function perguntarAndamento(codigo, intervaloMs, processando, resultado, pararRelogio) {
+  const consultar = async () => {
+    const resposta = await fetch("/processamentos/" + codigo);
+    const corpo = await resposta.json();
+    if (corpo.status === "pronto") {
+      clearInterval(laço);
+      pararRelogio();
+      mostrarNota(corpo, processando, resultado);
+      return;
+    }
+    if (corpo.status === "erro") {
+      clearInterval(laço);
+      pararRelogio();
+      processando.classList.add("escondido");
+      resultado.classList.remove("escondido");
+      resultado.textContent = "Não foi possível processar. Tente de novo.";
+    }
+  };
+  const laço = setInterval(consultar, intervaloMs);
+}
+
 function enviar(arquivo) {
   const envio = document.getElementById("envio");
   const processando = document.getElementById("processando");
@@ -139,6 +175,14 @@ function enviar(arquivo) {
   dados.append("trecho_id", trechoId);
   dados.append("video", arquivo);
 
+  let timerRelogio = null;
+  const pararRelogio = () => {
+    if (timerRelogio) {
+      clearInterval(timerRelogio);
+      timerRelogio = null;
+    }
+  };
+
   const xhr = new XMLHttpRequest();
   xhr.open("POST", "/videos");
   xhr.upload.onprogress = (evento) => {
@@ -151,33 +195,25 @@ function enviar(arquivo) {
     processando.classList.remove("escondido");
     let segundos = 0;
     const rotulo = document.getElementById("segundos");
-    const timer = setInterval(() => {
+    timerRelogio = setInterval(() => {
       segundos += 1;
       rotulo.textContent = segundos + " s";
     }, 1000);
-    xhr.addEventListener("loadend", () => clearInterval(timer), { once: true });
   };
   xhr.onload = () => {
-    processando.classList.add("escondido");
     if (xhr.status >= 400) {
+      pararRelogio();
+      processando.classList.add("escondido");
       resultado.classList.remove("escondido");
       resultado.textContent = "Não foi possível processar. Tente de novo.";
       return;
     }
     const corpo = JSON.parse(xhr.responseText);
-    resultado.classList.remove("escondido");
-    resultado.innerHTML =
-      '<p>Nota</p><p class="nota ' +
-      corpo.cor +
-      '">' +
-      corpo.nota +
-      "</p><p>Cor: " +
-      corpo.cor +
-      "</p><p>Obstáculos por 100 m: " +
-      Number(corpo.obstaculos_por_100m).toFixed(1) +
-      "</p>";
+    const intervaloMs = (corpo.intervalo_s || 3) * 1000;
+    perguntarAndamento(corpo.codigo, intervaloMs, processando, resultado, pararRelogio);
   };
   xhr.onerror = () => {
+    pararRelogio();
     processando.classList.add("escondido");
     resultado.classList.remove("escondido");
     resultado.textContent = "Falha de rede.";

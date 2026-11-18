@@ -13,6 +13,7 @@ dependencies = [
     "lap",
     "opencv-python-headless",
     "python-multipart>=0.0.34",
+    "supabase",
     "torch",
     "torchvision",
     "transformers",

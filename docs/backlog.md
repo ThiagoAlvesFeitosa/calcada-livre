@@ -117,28 +117,25 @@ pode faltar.
 
 ## Fase 2 — Nuvem e decisão
 
-## F2.1 — Nuvem (Space Docker; disco local)
+## F2.1 — Nuvem (túnel + Supabase)
 
 **Objetivo:** o site funcionando por um link público https (GPS no celular).
 
 **Descrição:**
-> O sistema roda num Hugging Face Space Docker, plano CPU grátis. Resultados ficam no disco do
-> Space (`saida/`). Supabase fica para depois (ADR-006).
+> A visão roda no computador. O celular usa Cloudflare Tunnel. Resultados ficam no Supabase
+> Storage (bucket privado). Dockerfile fica para a Azure (ADR-006).
 
 **Critérios de aceite:**
 
-- `Dockerfile`: Python 3.11, uv, PyTorch só CPU, porta 7860; pacotes do OpenCV; um `RUN` baixa
-  SegFormer, YOLO-World e CLIP para dentro da imagem
-- Cabeçalho YAML do Space no `README.md` (`sdk: docker`, `app_port: 7860`)
-- Pesos fora do Git (`modelos/`, `*.pt`)
-- `git ls-files .env` volta vazio; o `.env.example` lista as variáveis; token do Hugging Face só
-  no computador de quem publica
-- No celular: abrir o https, usar o GPS, enviar um vídeo e ver o mapa colorido
-- Se o envio cair perto de 60 s (tempo esgotado do Space), só então passar o POST para segundo
-  plano com consulta a cada 3 s — primeiro testar como está
-
-**Fora desta fatia:** adaptador Supabase e o teste “trocar `ARMAZENAMENTO` sem mudar código fora
-do adaptador”.
+- Trocar `ARMAZENAMENTO=local` por `supabase` não muda código fora do adaptador *(teste com
+  armazenamento falso)*
+- Com `ARMAZENAMENTO=supabase` e variável faltando, a API não sobe e cita o **nome**, sem valor
+- `POST /videos` devolve código na hora; a página pergunta a cada 3 s; um vídeo por vez (os outros
+  esperam); vídeo bruto não sobe
+- Limite 95 MB; tutorial até 30 s
+- `scripts/subir_existentes.py` envia o que já está em `saida/`
+- `git ls-files .env` volta vazio; o `.env.example` lista as variáveis
+- No celular: abrir o https do túnel, usar o GPS, enviar um vídeo e ver o mapa colorido
 
 **Depende de:** F1.3.
 **Referência:** `05-arquitetura.md`, seção 3.7; ADR-003; ADR-006.

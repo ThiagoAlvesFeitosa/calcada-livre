@@ -32,45 +32,40 @@ Autor: Thiago Alves Feitosa — Sistemas de Informação, FIAP.
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-No celular, na mesma Wi-Fi: `http://IP-DO-COMPUTADOR:8000` (gravar) e
-`http://IP-DO-COMPUTADOR:8000/painel` (mapa). Na rede local o endereço é http: o GPS do navegador
-em geral não libera. No Space o endereço é https: o GPS funciona.
+Na mesma Wi-Fi: `http://IP-DO-COMPUTADOR:8000` (gravar) e
+`http://IP-DO-COMPUTADOR:8000/painel` (mapa). Em http o GPS em geral não libera.
 
-## Publicar no Hugging Face Space
+## Link público (Cloudflare Tunnel)
 
-O token fica **só neste computador**. Não cole em `.env`, não suba para o GitHub.
+A visão roda neste computador. O celular usa um endereço **https** (GPS funciona). Resultados
+ficam no Supabase. O Dockerfile permanece no repositório para um dia na Azure (ADR-006).
 
-1. Crie a conta em [huggingface.co](https://huggingface.co).
-2. **New Space** → SDK **Docker** → hardware **CPU basic (grátis)** → público. Exemplo de nome:
-   `calcada-livre`.
-3. Em *Settings → Access Tokens*, crie um token com permissão **write**.
-4. No PowerShell, uma vez: `huggingface-cli login` e cole o token (ele grava na sua pasta de
-   usuário, fora do repositório). Se o comando não existir: `uv tool install huggingface_hub`.
-5. Ligue o Space como segundo remoto (troque `SEU_USUARIO` e o nome do Space):
+1. Copie `.env.example` para `.env` e preencha (não suba o `.env` para o Git):
+   `ARMAZENAMENTO=supabase`, `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_BUCKET`.
+   Vídeo no máximo **95 MB**; grave **até 30 segundos**.
+2. No Supabase: crie um bucket **privado** com o mesmo nome de `SUPABASE_BUCKET`.
+3. Suba o que já está em `saida/` (trechos 01 e 02), para o mapa não ficar cinza:
 
    ```
-   git remote add space https://huggingface.co/spaces/SEU_USUARIO/calcada-livre
-   git push space main
+   uv run python scripts/subir_existentes.py
    ```
 
-   Se pedir senha: usuário do Hugging Face + o **token** (não a senha da conta).
-6. No site do Space, espere o build (PyTorch CPU + download dos pesos: vários minutos). Status
-   **Running**.
-7. Abra `https://huggingface.co/spaces/SEU_USUARIO/calcada-livre` no celular: **Usar minha
-   localização**, enviar um vídeo, abrir o mapa e ver o trecho colorido.
+4. Instale o túnel no Windows:
 
-O GitHub continua com `git push origin`. Depois de cada alteração aprovada: `git push origin` e
-`git push space main`.
+   ```
+   winget install Cloudflare.cloudflared
+   ```
 
-Não crie variável `HF_TOKEN` no repositório. Se o Space precisar de alguma variável, use
-*Settings → Variables* na tela do Space.
+5. Com a API já no ar, em outro PowerShell:
 
-CLIP, `lap` e `ftfy` já estão no `pyproject.toml`, para o YOLO-World não tentar instalar pacote
-na hora de detectar. Os pesos (SegFormer, YOLO-World, CLIP) entram na **imagem** no `docker build`
-(`scripts/baixar_modelos.py`). Continuam fora do Git.
+   ```
+   cloudflared tunnel --url http://127.0.0.1:8000
+   ```
 
-Quando o Space gratuito reinicia, as notas e os quadros somem (pasta `saida/` no disco do
-container). Os pesos na imagem não precisam baixar de novo. Ver ADR-006.
+6. Abra no celular o **https** que o comando imprimir. O computador não pode dormir. Cada vez
+   que você roda o comando, o link muda.
 
-Se o envio cair perto de **60 segundos** (tempo esgotado), avise: aí o POST passa a devolver um
-código na hora e a página pergunta o andamento a cada 3 segundos. Primeiro teste como está.
+O POST devolve um código na hora e a página pergunta o andamento a cada 3 segundos (o túnel
+corta respostas longas). Só um vídeo é processado por vez; o próximo espera.
+
+Chaves só no `.env` neste computador. O navegador nunca recebe a chave do Supabase.
