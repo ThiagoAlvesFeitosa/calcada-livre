@@ -2,6 +2,62 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — calibração 0,12/65% e privacidade reforçada
+
+Parâmetros finais da visão: confiança 0,12, recorte do caminho 65%. Privacidade: mosaico
+(pixelização proporcional à caixa) em pessoas, placas e **todo** carro/moto, mais 80% da altura
+da caixa para baixo — a caixa do modelo costuma parar acima da placa. Caixas de obstáculo com
+linha de 3 px e texto maior. `uv run pytest`: 12 testes, inclusive carro com “placa” no lugar
+errado ainda saindo com a faixa de baixo pixelizada.
+
+Os dois trechos foram processados de novo. No 10,0 s e no 19,0 s a placa não dá para ler. No 5,0 s
+as caixas da caixa de papelão e do pilar aparecem nítidas. Trecho 01 continua sem obstáculo na
+lista.
+
+Próximo passo: F1.1 (nota por trecho).
+
+## Situação em 18/11/2026 — varredura de confiança e recorte
+
+Commit anterior: `ajuste: avaliador e recorte do caminho`. O `processar.py` agora grava
+`deteccoes_brutas.json` (confiança a partir de 0,05, dentro e fora do caminho). Dá para refiltrar
+sem rodar os modelos. Entulho, areia e tijolo aceitam corte por classe
+(`CONFIANCA_MINIMA_POR_CLASSE`). `scripts/varrer_filtros.py` testou 6 limiares × 3 recortes nos
+dois trechos. `uv run pytest`: 11 testes.
+
+Critério: mais acertos por posição no trecho 02, no máximo 1 falso positivo no trecho 01.
+
+| conf | recorte | acertos 02 | FP 02 | prec. 02 | rev. 02 | FP 01 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0,10 | 45% | 6 | 0 | 100% | 67% | 0 |
+| 0,10 | 55% | 7 | 1 | 88% | 78% | 0 |
+| 0,10 | 65% | 9 | 3 | 75% | 100% | 0 |
+| 0,12 | 45% | 5 | 0 | 100% | 56% | 0 |
+| 0,12 | 55% | 7 | 0 | 100% | 78% | 0 |
+| **0,12** | **65%** | **9** | **1** | **90%** | **100%** | **0** |
+| 0,15 | 45% | 2 | 0 | 100% | 22% | 0 |
+| 0,15 | 55% | 4 | 0 | 100% | 44% | 0 |
+| 0,15 | 65% | 6 | 0 | 100% | 67% | 0 |
+| 0,18 | 45% | 2 | 0 | 100% | 22% | 0 |
+| 0,18 | 55% | 3 | 0 | 100% | 33% | 0 |
+| 0,18 | 65% | 6 | 0 | 100% | 67% | 0 |
+| 0,20 | 45% | 2 | 0 | 100% | 22% | 0 |
+| 0,20 | 55% | 3 | 0 | 100% | 33% | 0 |
+| 0,20 | 65% | 5 | 0 | 100% | 56% | 0 |
+| 0,25 | 45% | 1 | 0 | 100% | 11% | 0 |
+| 0,25 | 55% | 2 | 0 | 100% | 22% | 0 |
+| 0,25 | 65% | 3 | 0 | 100% | 33% | 0 |
+| 0,12 + entulho/areia 0,05 | 65% | 9 | 2 | 82% | 100% | 0 |
+
+**Fica confiança 0,12 e recorte 65%.** Os 9 obstáculos do trecho 02 aparecem por posição (4 com a
+classe certa); 1 falso positivo no 02; trecho 01 continua zerado. Baixar só entulho/areia para 0,05
+não melhorou (mais um FP no 02). `CONFIANCA_MINIMA_POR_CLASSE` fica vazio.
+
+Como varrer de novo: `uv run python scripts/varrer_filtros.py`.
+
+Incluído no commit de calibração e privacidade.
+
+Próximo passo: F1.1 (nota por trecho).
+
 ## Situação em 18/11/2026 — ajuste da visão (caminho + avaliador)
 
 F0.2 já está no GitHub (`14a883e`). Esta rodada (cerca de 1 h) acrescentou `dados/gabarito.json`,
@@ -27,7 +83,7 @@ necessário se a demo precisar dos 9 obstáculos.
 
 Como avaliar: `uv run python scripts/avaliar.py saida/<id>/resultado.json`.
 
-Pendente: commit deste ajuste (aguardar o Thiago confirmar).
+Commit feito: `ajuste: avaliador e recorte do caminho`.
 
 Próximo passo: F1.1 (nota por trecho), usando `ocupacao_faixa` do caminho.
 

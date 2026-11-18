@@ -6,7 +6,7 @@ from ultralytics import YOLO, settings
 from app.portas.detector import Caixa
 from app.visao.parametros import (
     ARQUIVO_YOLO_WORLD,
-    CONFIANCA_MINIMA_PRIVACIDADE,
+    CONFIANCA_MINIMA_BRUTA,
     nomes_para_yolo,
 )
 
@@ -38,7 +38,7 @@ class DetectorObstaculos:
             quadro_bgr,
             verbose=False,
             device="cpu",
-            conf=CONFIANCA_MINIMA_PRIVACIDADE,
+            conf=CONFIANCA_MINIMA_BRUTA,
         )
         if not resultados:
             return []
