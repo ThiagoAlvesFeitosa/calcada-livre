@@ -2,6 +2,26 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 18/11/2026 — F2.1 Space Docker (disco local)
+
+Site público num Hugging Face Space **Docker**, CPU grátis, porta **7860**. `Dockerfile`: Python
+3.11, uv 0.12.3, PyTorch só CPU, `libglib2.0-0` / `libgomp1` / `libgl1` / git para o OpenCV e o
+CLIP. Um `RUN` executa `scripts/baixar_modelos.py` (SegFormer + YOLO-World + CLIP) para os pesos
+ficarem **na imagem**, não no Git. Cabeçalho YAML no `README.md`. CLIP, `lap` e `ftfy` já estavam
+no `pyproject.toml`.
+
+**ADR-006:** armazenamento continua `saida/` no disco do Space. Motivo: prazo. Consequência: notas
+e fotos somem quando o Space reinicia; os pesos na imagem não. Supabase e o teste de trocar o
+adaptador ficam para depois. Token do Hugging Face só no computador (login da CLI), nunca em
+arquivo do repositório.
+
+Envio ainda é o POST sincrônico. Se o Space cortar perto de 60 s, aí sim processamento em segundo
+plano. `uv run pytest`: 26 testes. Commit só com o Thiago; mensagem prevista:
+`F2.1: Space Docker com pesos na imagem`.
+
+Próximo passo: Thiago cria o Space, `git push space main`, testa no celular (https, GPS, vídeo,
+mapa). Depois F2.2 (prioridade e laudo), se o prazo deixar.
+
 ## Situação em 18/11/2026 — GPS, data BR e nomes em português
 
 A página de gravar não tem mais mapa. Botão **Usar minha localização** (até 50 m da linha);
@@ -12,7 +32,7 @@ Data no painel: `dd/mm/aaaa HH:MM` no horário de Brasília. Classes em portugu�
 etiquetas dos quadros (`NOMES_CLASSES_PT` em `app/nota/parametros.py`). Os dois vídeos foram
 processados de novo (`poste`, `caixa de papelao`, etc.). `uv run pytest`: 26 testes.
 
-Pendente: commit destes ajustes (aguardar o Thiago confirmar).
+Commit: `ajuste: GPS, data BR e nomes em portugues`.
 
 ## Situação em 18/11/2026 — F1.3 painel com mapa
 

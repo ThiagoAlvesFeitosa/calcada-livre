@@ -100,10 +100,13 @@ em `app/nota/parametros.py`:
 
 ### 3.7 Nuvem
 
-- Hugging Face Spaces (Docker): roda a API, os modelos e serve as páginas.
-- Supabase: Postgres e Storage.
-- Interfaces trocáveis: armazenamento (`local` ou `supabase`), detector (real ou falso para
-  teste) e laudo (`llm`, `modelo_fixo` ou falso para teste).
+- Hugging Face Spaces (Docker, CPU grátis): roda a API, os modelos e serve as páginas na porta 7860.
+- Pesos do SegFormer, YOLO-World e CLIP entram na imagem no `docker build`; não vão para o Git.
+- Nesta fatia o armazenamento no Space é a pasta `saida/` no disco do container (ADR-006).
+- Supabase (Postgres + Storage) fica para depois; a interface de armazenamento continua pronta para
+  essa troca.
+- Detector (real ou falso para teste) e laudo (`llm`, `modelo_fixo` ou falso para teste) já são
+  trocáveis.
 
 ## 4. Decisões (ADR)
 
@@ -164,6 +167,22 @@ na regra da nota. Sem Spec Kit, sem constituição e sem os documentos 01 a 04.
 
 **Consequências.** *Aceitas:* menos garantia de qualidade fora da nota. *Ganhas:* demo pronta para
 gravar na quarta.
+
+### ADR-006 — Disco local no Space nesta fatia
+
+**Contexto.** A F2.1 do backlog previa Supabase junto com o Space. O prazo da GS2 é curto; o
+adaptador de nuvem ainda não está escrito.
+
+**Decisão.** Publicar só o Space Docker (CPU grátis). Notas, quadros e JSON ficam em `saida/` no
+disco do container. Pesos dos modelos vêm na imagem (baixados no `docker build`). O token do
+Hugging Face fica só no computador de quem publica, nunca no repositório.
+
+**Alternativas.** Implementar o adaptador Supabase agora (ADR-003 completo); volume `/data` pago
+no Space.
+
+**Consequências.** *Aceitas:* quando o Space gratuito reinicia, os resultados somem e o mapa volta
+cinza até filmar de novo; os pesos na imagem não precisam baixar outra vez. *Ganhas:* link público
+https (GPS no celular) no prazo, sem Redis, fila nem banco.
 
 ## 5. Fora da demo (roadmap)
 

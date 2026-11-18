@@ -117,22 +117,31 @@ pode faltar.
 
 ## Fase 2 — Nuvem e decisão
 
-## F2.1 — Nuvem
+## F2.1 — Nuvem (Space Docker; disco local)
 
-**Objetivo:** o site funcionando por um link público.
+**Objetivo:** o site funcionando por um link público https (GPS no celular).
 
 **Descrição:**
-> Vídeos, quadros e notas passam a ficar no Supabase, e o sistema roda num Hugging Face Space,
-> acessível pelo celular.
+> O sistema roda num Hugging Face Space Docker, plano CPU grátis. Resultados ficam no disco do
+> Space (`saida/`). Supabase fica para depois (ADR-006).
 
 **Critérios de aceite:**
 
-- Trocar `ARMAZENAMENTO=local` por `supabase` no `.env` não muda nenhum código fora do adaptador *(teste com armazenamento falso)*
-- `Dockerfile` sobe a API e as páginas no Space
-- `git ls-files .env` volta vazio; o `.env.example` lista as variáveis
+- `Dockerfile`: Python 3.11, uv, PyTorch só CPU, porta 7860; pacotes do OpenCV; um `RUN` baixa
+  SegFormer, YOLO-World e CLIP para dentro da imagem
+- Cabeçalho YAML do Space no `README.md` (`sdk: docker`, `app_port: 7860`)
+- Pesos fora do Git (`modelos/`, `*.pt`)
+- `git ls-files .env` volta vazio; o `.env.example` lista as variáveis; token do Hugging Face só
+  no computador de quem publica
+- No celular: abrir o https, usar o GPS, enviar um vídeo e ver o mapa colorido
+- Se o envio cair perto de 60 s (tempo esgotado do Space), só então passar o POST para segundo
+  plano com consulta a cada 3 s — primeiro testar como está
+
+**Fora desta fatia:** adaptador Supabase e o teste “trocar `ARMAZENAMENTO` sem mudar código fora
+do adaptador”.
 
 **Depende de:** F1.3.
-**Referência:** `05-arquitetura.md`, seção 3.7; ADR-003.
+**Referência:** `05-arquitetura.md`, seção 3.7; ADR-003; ADR-006.
 
 ## F2.2 — Prioridade e laudo
 

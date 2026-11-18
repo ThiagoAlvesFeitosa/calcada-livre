@@ -15,7 +15,7 @@ videos/
 saida/
 uploads/
 
-# Pesos dos modelos (baixados na primeira execução)
+# Pesos dos modelos (imagem Docker / pasta local; nunca no Git)
 *.pt
 *.safetensors
 modelos/
