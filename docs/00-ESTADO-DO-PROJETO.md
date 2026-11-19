@@ -2,6 +2,27 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 19/11/2026, 08h30 — decisão: o relato cria o trecho (F1.4, a fazer)
+
+Problema achado pelo Thiago no teste pelo celular, fora da R. Dom Pedro II: a página dizia “Não
+achamos um trecho cadastrado perto de você”. Erro de conceito: o sistema exigia cadastro prévio dos
+lugares, o que obrigaria desenhar todas as calçadas de todas as cidades. Decisão: **o relato cria o
+trecho**.
+
+Regras decididas com o Thiago:
+- Trecho = linha do GPS do início ao fim da gravação (o problema pode ser num ponto ou se estender
+  por metros; os obstáculos aparecem como pontos vermelhos sobre a linha). Sem GPS no fim: ponto.
+- Nome do local automático pelo GPS (reverse do Nominatim/OpenStreetMap), com Confirmar/Corrigir.
+- Mesmo trecho só depois de comparar: pontas a menos de 15 m (parâmetro), em qualquer sentido, e
+  mesma rua; aí a pessoa confirma “É a mesma calçada? Sim, atualizar / Não, é outro trecho”.
+  O GPS do celular erra 5–10 m e a calçada do outro lado da rua pode cair perto.
+- Trechos 01 e 02 ficam; as faces norte, leste e oeste (inventadas) saem.
+- Trechos guardados pelo armazenamento (Supabase na demo), sem nada que identifique quem enviou.
+
+Segurança no dia da entrega: tag `demo-estavel` antes de mexer, trabalho no branch
+`relato-cria-trecho`, prazo de 1h30. Sem funcionar até lá, volta para a tag e a gravação usa a lista.
+Registrar como ADR-007 e fatia F1.4.
+
 ## Situação em 18/11/2026 — layout gravar e mapa
 
 Topo azul com “FIAP Calçada Livre”, abas Gravar/Mapa. Gravar: câmera no centro, botão fixo embaixo
