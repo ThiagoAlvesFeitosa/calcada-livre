@@ -2,6 +2,18 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 19/11/2026 — recálculo sem vídeo e testes no celular
+
+`scripts/recalcular_trecho.py <trecho_id>` relê `deteccoes_brutas.json`, aplica as regras atuais,
+grava de novo `resultado.json` e `nota.json` e sobe no armazenamento. Não precisa do vídeo.
+
+- Envio das **10h18** (`5d4bd12a8ed04519bff6b7579fdca2bc`, 11,18 m): recalculado de **100 verde**
+  para **28 vermelho** (1 entulho).
+- Teste das **10h35** (celular em pé, regra nova já no servidor): **1 problema: entulho**, nota
+  **73**, comprimento **30 m** pelo GPS.
+
+63 testes.
+
 ## Situação em 19/11/2026 — chão em retrato (0,75) e junção com caixa
 
 Em retrato, classes do chão (entulho, buraco, calçada danificada, objeto no caminho, areia,
@@ -10,8 +22,9 @@ tijolos) usam faixa 0,75; o resto continua 0,65. Paisagem segue 0,65.
 Marcas do chão (ou chão + caixa de papelão) a até 1,5 s e IoU > 0,3 viram um obstáculo, com a
 classe de maior prioridade. Poste, árvore e lixeira não entram nessa junção.
 
-O vídeo do celular (`saida/5d4bd12a8ed04519bff6b7579fdca2bc`) fica 1 entulho; com 11,18 m a nota
-é 28 vermelho.
+O vídeo do celular (`saida/5d4bd12a8ed04519bff6b7579fdca2bc`) foi **recalculado** com
+`scripts/recalcular_trecho.py` (sem o vídeo): de 100 verde para **28 vermelho**, 1 entulho,
+11,18 m. Resultado e nota regravados e enviados ao armazenamento.
 
 | Vídeo | Precisão (posição) | Revocação (posição) | Precisão (classe) | Revocação (classe) | FP |
 | --- | --- | --- | --- | --- | --- |
@@ -21,7 +34,7 @@ O vídeo do celular (`saida/5d4bd12a8ed04519bff6b7579fdca2bc`) fica 1 entulho; c
 | trecho-02-retrato | 100% | 43% | 67% | 29% | 0 |
 | trecho-03 | 50% | 100% | 50% | 100% | 1 |
 
-62 testes. Tag `demo-chao`.
+63 testes. Tag `demo-chao`. Script: `uv run python scripts/recalcular_trecho.py <trecho_id>`.
 
 ## Situação em 19/11/2026 — vídeo em pé (retrato)
 
