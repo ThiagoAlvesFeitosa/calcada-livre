@@ -55,8 +55,9 @@ Celular (navegador)                Nuvem                                  Navega
 
 1. Extrair 2 quadros por segundo (OpenCV), respeitando a rotação gravada pelo celular
    (`CAP_PROP_ORIENTATION_AUTO`). Dilatação da máscara e espessura das caixas são proporcionais
-   à altura do quadro (referência: 24 px em 576 px de altura). Em retrato, a faixa do caminho e o
-   corredor central usam parâmetros próprios (`FRACAO_CAMINHO_INFERIOR_RETRATO`, etc.).
+   à altura do quadro (referência: 24 px em 576 px de altura). Em retrato, a faixa do caminho das
+   classes do chão é 0,75; as outras e a paisagem ficam em 0,65. Entulho e caixa sobrepostos
+   (1,5 s, IoU > 0,3) viram um obstáculo.
 2. Máscara da calçada: SegFormer `nvidia/segformer-b0-finetuned-cityscapes-1024-1024`, classe
    `sidewalk`.
 3. Objetos: YOLO-World (`yolov8s-worldv2.pt`) com as classes `pole`, `tree`, `trash bin`, `car`,

@@ -21,6 +21,7 @@ FRACAO_INFERIOR_VEICULO = 1.0
 FRACAO_EXTENSAO_INFERIOR_VEICULO = 0.8
 FRACAO_CAMINHO_INFERIOR_PAISAGEM = 0.65
 FRACAO_CAMINHO_INFERIOR_RETRATO = 0.65
+FRACAO_CAMINHO_INFERIOR_RETRATO_CHAO = 0.75
 FRACAO_CAMINHO_INFERIOR = FRACAO_CAMINHO_INFERIOR_PAISAGEM
 FRACAO_LARGURA_CORREDOR_CENTRAL_PAISAGEM = 0.5
 FRACAO_LARGURA_CORREDOR_CENTRAL_RETRATO = 0.5
@@ -35,6 +36,27 @@ CLASSE_CAMINHO_OBSTRUIDO = "blocked path"
 CLASSES_NOVAS_SOBREPOSICAO = frozenset({CLASSE_OBJETO_NO_CAMINHO, CLASSE_CALCADA_DANIFICADA})
 CLASSES_PROTEGIDAS_SOBREPOSICAO = frozenset({"tree", "trash bin"})
 CLASSES_YOLO_PAUSADAS = frozenset({CLASSE_OBJETO_NO_CAMINHO, CLASSE_CALCADA_DANIFICADA})
+CLASSES_CHAO = frozenset(
+    {
+        "construction debris",
+        "pothole",
+        CLASSE_CALCADA_DANIFICADA,
+        CLASSE_OBJETO_NO_CAMINHO,
+        "sand pile",
+        "bricks",
+    }
+)
+CLASSES_NUNCA_JUNTAR = frozenset({"pole", "tree", "trash bin"})
+CLASSE_CAIXA_PAPELAO = "cardboard box"
+PRIORIDADE_JUNTAR_CHAO = (
+    CLASSE_CALCADA_DANIFICADA,
+    "pothole",
+    "stairs",
+    "construction debris",
+    CLASSE_OBJETO_NO_CAMINHO,
+    CLASSE_CAIXA_PAPELAO,
+)
+SOBREPOSICAO_MINIMA_JUNTAR_CHAO = 0.3
 
 SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE = 1.5
 SEGUNDOS_TOLERANCIA_GABARITO = 2.0
@@ -128,12 +150,18 @@ def eh_retrato(altura: int, largura: int) -> bool:
     return int(altura) > int(largura)
 
 
-def fracao_caminho_inferior(altura: int | None = None, largura: int | None = None) -> float:
+def fracao_caminho_inferior(
+    altura: int | None = None,
+    largura: int | None = None,
+    classe: str | None = None,
+) -> float:
     if altura is None or largura is None:
         return FRACAO_CAMINHO_INFERIOR_PAISAGEM
-    if eh_retrato(altura, largura):
-        return FRACAO_CAMINHO_INFERIOR_RETRATO
-    return FRACAO_CAMINHO_INFERIOR_PAISAGEM
+    if not eh_retrato(altura, largura):
+        return FRACAO_CAMINHO_INFERIOR_PAISAGEM
+    if classe is not None and classe_nossa(classe) in CLASSES_CHAO:
+        return FRACAO_CAMINHO_INFERIOR_RETRATO_CHAO
+    return FRACAO_CAMINHO_INFERIOR_RETRATO
 
 
 def fracao_corredor_central(altura: int | None = None, largura: int | None = None) -> float:

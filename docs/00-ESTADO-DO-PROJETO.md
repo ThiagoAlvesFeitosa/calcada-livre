@@ -2,6 +2,27 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 19/11/2026 — chão em retrato (0,75) e junção com caixa
+
+Em retrato, classes do chão (entulho, buraco, calçada danificada, objeto no caminho, areia,
+tijolos) usam faixa 0,75; o resto continua 0,65. Paisagem segue 0,65.
+
+Marcas do chão (ou chão + caixa de papelão) a até 1,5 s e IoU > 0,3 viram um obstáculo, com a
+classe de maior prioridade. Poste, árvore e lixeira não entram nessa junção.
+
+O vídeo do celular (`saida/5d4bd12a8ed04519bff6b7579fdca2bc`) fica 1 entulho; com 11,18 m a nota
+é 28 vermelho.
+
+| Vídeo | Precisão (posição) | Revocação (posição) | Precisão (classe) | Revocação (classe) | FP |
+| --- | --- | --- | --- | --- | --- |
+| trecho-01 (deitado) | — | — | — | — | 0 |
+| trecho-02 (deitado) | 90% | 100% | 40% | 44% | 1 |
+| trecho-01-retrato | — | — | — | — | 0 |
+| trecho-02-retrato | 100% | 43% | 67% | 29% | 0 |
+| trecho-03 | 50% | 100% | 50% | 100% | 1 |
+
+62 testes. Tag `demo-chao`.
+
 ## Situação em 19/11/2026 — vídeo em pé (retrato)
 
 Leitura do vídeo liga a rotação do arquivo (teste com mp4 de 80×40 e matriz 90°). Dilatação 24 px

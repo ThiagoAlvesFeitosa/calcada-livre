@@ -11,7 +11,10 @@ from app.portas.detector import Caixa, Detector
 from app.visao.parametros import (
     CLASSE_CALCADA_DANIFICADA,
     CLASSE_CAMINHO_OBSTRUIDO,
+    CLASSE_CAIXA_PAPELAO,
+    CLASSES_CHAO,
     CLASSES_FORA_DA_CONTAGEM,
+    CLASSES_NUNCA_JUNTAR,
     CLASSES_NOVAS_SOBREPOSICAO,
     CLASSES_PROTEGIDAS_SOBREPOSICAO,
     CONFIANCA_MINIMA_BRUTA,
@@ -20,10 +23,12 @@ from app.visao.parametros import (
     FRACAO_CAMINHO_INFERIOR,
     FRACAO_LARGURA_CORREDOR_CENTRAL,
     FRACAO_MINIMA_CHAO_LIVRE,
+    PRIORIDADE_JUNTAR_CHAO,
     QUADROS_POR_SEGUNDO,
     SEGUNDOS_MINIMOS_OBSTRUCAO,
     SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE,
     SOBREPOSICAO_MAXIMA,
+    SOBREPOSICAO_MINIMA_JUNTAR_CHAO,
     classe_nossa,
     confianca_minima,
     etiqueta_quadro,
@@ -44,6 +49,10 @@ class Obstaculo:
     ocupacao_faixa: float
     id_rastreio: int | None
     instante_ultimo: float
+    x1: int = 0
+    y1: int = 0
+    x2: int = 0
+    y2: int = 0
 
 
 def dilatar_mascara(mascara: np.ndarray, pixels: int | None = None) -> np.ndarray:
@@ -181,7 +190,7 @@ def obstaculos_de_chao_obstruido(amostras: list[tuple[float, float]]) -> list[Ob
 
 def _caixa_no_caminho(caixa: Caixa, mascara: np.ndarray) -> bool:
     altura, largura = mascara.shape[:2]
-    fracao = fracao_caminho_inferior(altura, largura)
+    fracao = fracao_caminho_inferior(altura, largura, caixa.classe)
     if classe_nossa(caixa.classe) == CLASSE_CALCADA_DANIFICADA:
         return caixa_inteira_no_caminho(caixa, mascara, fracao_inferior=fracao)
     return base_no_caminho(caixa, mascara, fracao_inferior=fracao)
@@ -216,13 +225,72 @@ def _juntar(existentes: list[Obstaculo], novo: Obstaculo) -> None:
             and abs(novo.instante_s - atual.instante_ultimo) <= SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE
         )
         if mesmo_id or mesma_classe:
-            atual.confianca = max(atual.confianca, novo.confianca)
-            atual.ocupacao_faixa = max(atual.ocupacao_faixa, novo.ocupacao_faixa)
-            atual.instante_ultimo = novo.instante_s
-            if novo.id_rastreio is not None:
-                atual.id_rastreio = novo.id_rastreio
+            _absorver_obstaculo(atual, novo, trocar_classe=False)
             return
     existentes.append(novo)
+
+
+def _indice_prioridade(classe: str) -> int:
+    try:
+        return PRIORIDADE_JUNTAR_CHAO.index(classe_nossa(classe))
+    except ValueError:
+        return len(PRIORIDADE_JUNTAR_CHAO)
+
+
+def _eh_par_chao_ou_caixa(a: str, b: str) -> bool:
+    a_n = classe_nossa(a)
+    b_n = classe_nossa(b)
+    if a_n in CLASSES_NUNCA_JUNTAR or b_n in CLASSES_NUNCA_JUNTAR:
+        return False
+    dois_chao = a_n in CLASSES_CHAO and b_n in CLASSES_CHAO
+    um_e_caixa = (a_n in CLASSES_CHAO and b_n == CLASSE_CAIXA_PAPELAO) or (
+        b_n in CLASSES_CHAO and a_n == CLASSE_CAIXA_PAPELAO
+    )
+    return dois_chao or um_e_caixa
+
+
+def _iou_obstaculos(a: Obstaculo, b: Obstaculo) -> float:
+    return iou_caixas(
+        Caixa(classe=a.classe, confianca=a.confianca, x1=a.x1, y1=a.y1, x2=a.x2, y2=a.y2, id_rastreio=a.id_rastreio),
+        Caixa(classe=b.classe, confianca=b.confianca, x1=b.x1, y1=b.y1, x2=b.x2, y2=b.y2, id_rastreio=b.id_rastreio),
+    )
+
+
+def _absorver_obstaculo(atual: Obstaculo, novo: Obstaculo, trocar_classe: bool) -> None:
+    if trocar_classe and _indice_prioridade(novo.classe) < _indice_prioridade(atual.classe):
+        atual.classe = novo.classe
+    atual.confianca = max(atual.confianca, novo.confianca)
+    atual.ocupacao_faixa = max(atual.ocupacao_faixa, novo.ocupacao_faixa)
+    atual.instante_ultimo = max(atual.instante_ultimo, novo.instante_ultimo, novo.instante_s)
+    if novo.instante_s < atual.instante_s:
+        atual.instante_s = novo.instante_s
+    atual.x1 = min(atual.x1, novo.x1)
+    atual.y1 = min(atual.y1, novo.y1)
+    atual.x2 = max(atual.x2, novo.x2)
+    atual.y2 = max(atual.y2, novo.y2)
+    if novo.id_rastreio is not None:
+        atual.id_rastreio = novo.id_rastreio
+
+
+def _fundir_chao_duplicado(obstaculos: list[Obstaculo]) -> list[Obstaculo]:
+    saida: list[Obstaculo] = []
+    for novo in obstaculos:
+        acoplou = False
+        for atual in saida:
+            if not _eh_par_chao_ou_caixa(atual.classe, novo.classe):
+                continue
+            if abs(novo.instante_s - atual.instante_ultimo) > SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE and abs(
+                novo.instante_s - atual.instante_s
+            ) > SEGUNDOS_PARA_JUNTAR_MESMA_CLASSE:
+                continue
+            if _iou_obstaculos(atual, novo) <= SOBREPOSICAO_MINIMA_JUNTAR_CHAO:
+                continue
+            _absorver_obstaculo(atual, novo, trocar_classe=True)
+            acoplou = True
+            break
+        if not acoplou:
+            saida.append(novo)
+    return saida
 
 
 def _eh_obstaculo(
@@ -291,6 +359,7 @@ def filtrar_obstaculos(
             fracao = fracao_caminho_inferior(
                 int(item.get("altura_quadro", 0)),
                 int(item.get("largura_quadro", 0)),
+                caixa.classe,
             )
         else:
             fracao = fracao_caminho
@@ -309,9 +378,13 @@ def filtrar_obstaculos(
                 ocupacao_faixa=_ocupacao_da_deteccao(item),
                 id_rastreio=caixa.id_rastreio,
                 instante_ultimo=instante,
+                x1=caixa.x1,
+                y1=caixa.y1,
+                x2=caixa.x2,
+                y2=caixa.y2,
             ),
         )
-    return _serializar(obstaculos)
+    return _serializar(_fundir_chao_duplicado(obstaculos))
 
 
 def _registro_bruto(caixa: Caixa, instante_s: float, mascara: np.ndarray) -> dict:
