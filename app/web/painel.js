@@ -79,11 +79,11 @@ async function iniciar() {
       opacity: 1,
     }),
     pointToLayer: (feature, latlng) =>
-      L.circleMarker(latlng, {
-        radius: 8,
+      L.circle(latlng, {
+        radius: Number(feature.properties.raio_m),
         color: corLinha(feature.properties.cor),
         fillColor: corLinha(feature.properties.cor),
-        fillOpacity: 1,
+        fillOpacity: 0.35,
         weight: 2,
       }),
     onEachFeature: (feature, layer) => {

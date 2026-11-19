@@ -2,6 +2,24 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 19/11/2026 — ajuste F1.4 (log, comprimento, endereço, mapa)
+
+No celular o processamento falhou sem rastro e o nome veio “Local sem nome”. Correção em 4 partes,
+com testes antes do código:
+
+1. Erro em `saida/logs/app.log` e no terminal: tipo, traceback, código e etapa (sem GPS e sem
+   nome do arquivo da pessoa). Nominatim só anota tipo e status HTTP.
+2. Ponto ou linha com menos de 10 m: comprimento = max(10 m, duração × 1 m/s). Linha de 10 m ou
+   mais continua no GPS. Origem gravada: `gps` ou `estimado pela duração`.
+3. GPS: se a alta precisão falhar, tenta de novo sem ela (20 s, posição de até 60 s). Sem
+   endereço: campo para digitar; busca Nominatim no Brasil. Nunca mostra “Local sem nome”.
+4. Ponto no mapa vira círculo com raio = metade do comprimento (mínimo 5 m).
+
+GPS que falha: texto pequeno com o motivo (permissão, celular desligado ou demora) e
+`POST /registro-gps` grava só o código no log, sem coordenada.
+
+44 testes. Commit só com o Thiago.
+
 ## Situação em 19/11/2026 — F1.4: o relato cria o trecho
 
 O envio cria o trecho. GPS do início + nome da rua → “Você está na <rua>” → o toque em

@@ -156,8 +156,16 @@ pode faltar.
 - `test_pontas_perto_e_confirmado_atualiza_o_mesmo_trecho` *(teste)*
 - `test_mesmo_lugar_com_nao_cria_trecho_novo` *(teste)*
 - `test_sem_gps_no_fim_vira_ponto` *(teste)*
-- `test_geocodificador_que_falha_devolve_local_sem_nome` *(teste)*
-- Confirmar abre a câmera no mesmo toque; GPS com alta precisão, sem posição guardada, 10 s
+- `test_geocodificador_que_falha_nao_mostra_local_sem_nome` *(teste)*
+- `test_trecho_ponto_com_video_de_30s_fica_com_30m` *(teste)*
+- `test_trecho_ponto_com_video_de_4s_fica_com_10m` *(teste)*
+- `test_linha_com_gps_de_50m_continua_com_50m` *(teste)*
+- `test_endereco_digitado_vira_ponto` *(teste)*
+- `test_endereco_nao_encontrado_mostra_a_mensagem` *(teste)*
+- `test_erro_no_processamento_grava_linha_no_log_com_a_etapa` *(teste)*
+- `test_registro_gps_grava_so_o_codigo_sem_coordenada` *(teste)*
+- Confirmar abre a câmera no mesmo toque; GPS com alta precisão, sem posição guardada, 10 s;
+  se falhar, tenta sem alta precisão
 - Faces norte, leste e oeste saem; trechos 01 e 02 ficam e entram no armazenamento
 
 **Depende de:** F2.1.

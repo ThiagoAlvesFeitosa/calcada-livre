@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from app.nota.parametros import FUSO_BRASILIA, QUADROS_NO_DETALHE
+from app.nota.parametros import COMPRIMENTO_PONTO_M, FUSO_BRASILIA, QUADROS_NO_DETALHE
 from app.nota.regras import calcular_nota
 from app.portas.armazenamento import Armazenamento
 from app.visao.parametros import nome_em_portugues
@@ -48,7 +48,8 @@ def nota_do_trecho(
     gravada = armazenamento.ler_json(trecho_id, "nota.json")
     if gravada:
         gravada = dict(gravada)
-        gravada["comprimento_m"] = comprimento
+        if gravada.get("comprimento_m") is None:
+            gravada["comprimento_m"] = comprimento
         gravada["data"] = formatar_data_brasilia(gravada.get("data"))
         return gravada
     resultado = armazenamento.ler_json(trecho_id, "resultado.json")
@@ -172,6 +173,11 @@ def geojson_com_notas(armazenamento: Armazenamento, colecao: dict[str, Any]) -> 
             obstaculos = list(resultado.get("obstaculos", []))
             duracao = float(resultado.get("duracao_s") or 0)
             propriedades["duracao_s"] = duracao
+            comprimento_m = float(nota.get("comprimento_m") or COMPRIMENTO_PONTO_M)
+            propriedades["comprimento_m"] = comprimento_m
+            propriedades["comprimento_origem"] = nota.get("comprimento_origem")
+            if (copia.get("geometry") or {}).get("type") == "Point":
+                propriedades["raio_m"] = max(comprimento_m / 2, COMPRIMENTO_PONTO_M / 2)
             propriedades["pontos_obstaculos"] = pontos_dos_obstaculos(
                 copia.get("geometry"), obstaculos, duracao
             )

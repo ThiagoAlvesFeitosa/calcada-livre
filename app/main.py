@@ -8,7 +8,10 @@ import tempfile
 import threading
 import uuid
 
+import cv2
+
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel, ConfigDict
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -29,6 +32,11 @@ from app.nota.parametros import (
     COR_VERMELHO,
     EXTENSOES_VIDEO,
     GPS_ESPERA_S,
+    GPS_ESPERA_SEM_PRECISAO_S,
+    GPS_IDADE_MAXIMA_S,
+    MENSAGEM_DIGITE_ENDERECO,
+    MENSAGEM_ENDERECO_NAO_ENCONTRADO,
+    MOTIVOS_GPS,
     NOME_LOCAL_SEM_NOME,
 )
 from app.nota.regras import calcular_nota
@@ -36,9 +44,11 @@ from app.portas.armazenamento import Armazenamento
 from app.portas.detector import Detector
 from app.portas.geocodificador import Geocodificador
 from app.processamentos import marcar_erro, marcar_pronto, obter, registrar, trava_visao
+from app.registro import configurar_registro, registrar_falha, registrar_gps
 from app.trechos.cadastro import (
     acrescentar_feature,
     candidato_mesmo_trecho,
+    comprimento_efetivo,
     geometria_do_relato,
     nova_feature,
     trava_cadastro,
@@ -50,15 +60,26 @@ from app.trechos.consulta import (
     nota_do_trecho,
     resumo_censo,
 )
-from app.trechos.geometria import comprimento_do_trecho, ids_dos_trechos, trecho_mais_proximo
+from app.trechos.geometria import (
+    comprimento_do_trecho,
+    feature_por_id,
+    ids_dos_trechos,
+    trecho_mais_proximo,
+)
 from app.visao.pipeline import processar_video
 
 PASTA_WEB = RAIZ / "app" / "web"
 
 
+class PedidoRegistroGps(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    codigo: int
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     conferir_configuracao()
+    configurar_registro(obter_configuracao().pasta_saida)
     yield
 
 
@@ -121,21 +142,35 @@ def _trabalhar(
     caminho_bruto: Path,
     trecho_id: str,
     pasta_saida: str,
-    comprimento: float,
+    comprimento_gps: float,
+    eh_ponto: bool,
     detector: Detector,
     armazenamento: Armazenamento,
 ) -> None:
+    etapa = "leitura do vídeo"
     try:
         with trava_visao:
+            etapa = "leitura do vídeo"
+            captura = cv2.VideoCapture(str(caminho_bruto))
+            aberto = captura.isOpened()
+            captura.release()
+            if not aberto:
+                raise RuntimeError("vídeo ilegível")
+            etapa = "visão"
             resultado = processar_video(
                 caminho_bruto,
                 detector,
                 pasta_saida,
                 identificador=trecho_id,
             )
+            etapa = "nota"
+            duracao = float(resultado.get("duracao_s") or 0)
+            comprimento, origem = comprimento_efetivo(comprimento_gps, duracao, eh_ponto)
             nota = calcular_nota(list(resultado.get("obstaculos", [])), comprimento)
             nota["data"] = datetime.now(timezone.utc).isoformat()
             nota["comprimento_m"] = comprimento
+            nota["comprimento_origem"] = origem
+            etapa = "gravação no armazenamento"
             pasta = Path(pasta_saida) / trecho_id
             pasta.mkdir(parents=True, exist_ok=True)
             (pasta / "nota.json").write_text(
@@ -146,7 +181,8 @@ def _trabalhar(
         resposta = {"trecho_id": trecho_id, **nota}
         resposta["data"] = formatar_data_brasilia(nota["data"])
         marcar_pronto(codigo, resposta)
-    except Exception:
+    except Exception as erro:
+        registrar_falha(pasta_saida, codigo, etapa, erro)
         marcar_erro(codigo, "Não foi possível processar. Tente de novo.")
     finally:
         caminho_bruto.unlink(missing_ok=True)
@@ -192,14 +228,53 @@ def localizacao(
     return {"trecho": achado}
 
 
+def _parametros_gps() -> dict:
+    return {
+        "gps_espera_s": GPS_ESPERA_S,
+        "gps_espera_sem_precisao_s": GPS_ESPERA_SEM_PRECISAO_S,
+        "gps_idade_maxima_s": GPS_IDADE_MAXIMA_S,
+        "mensagem_digite_endereco": MENSAGEM_DIGITE_ENDERECO,
+        "mensagem_endereco_nao_encontrado": MENSAGEM_ENDERECO_NAO_ENCONTRADO,
+        "motivos_gps": {str(codigo): texto for codigo, texto in MOTIVOS_GPS.items()},
+    }
+
+
+@app.post("/registro-gps")
+def registro_gps(
+    pedido: PedidoRegistroGps,
+    configuracao: Configuracao = Depends(obter_configuracao),
+) -> dict:
+    registrar_gps(configuracao.pasta_saida, pedido.codigo)
+    return {"ok": True}
+
+
 @app.get("/endereco")
 def endereco(
-    lat: float,
-    lon: float,
+    lat: float | None = None,
+    lon: float | None = None,
+    q: str | None = None,
     geocodificador: Geocodificador = Depends(obter_geocodificador),
 ) -> dict:
-    nome = geocodificador.nome_da_rua(lat, lon)
-    return {"nome": nome or NOME_LOCAL_SEM_NOME, "gps_espera_s": GPS_ESPERA_S}
+    base = _parametros_gps()
+    if q is not None and str(q).strip():
+        ponto = geocodificador.ponto_do_endereco(str(q).strip())
+        if not ponto:
+            return {
+                **base,
+                "encontrado": False,
+                "mensagem": MENSAGEM_ENDERECO_NAO_ENCONTRADO,
+            }
+        return {
+            **base,
+            "encontrado": True,
+            "nome": ponto["nome"],
+            "lat": ponto["lat"],
+            "lon": ponto["lon"],
+        }
+    if lat is not None and lon is not None:
+        nome = geocodificador.nome_da_rua(lat, lon)
+        return {**base, "nome": nome}
+    return base
 
 
 @app.get("/trechos/candidatos")
@@ -319,7 +394,9 @@ async def enviar_video(
             trecho_id = str(feature["id"])
             colecao = acrescentar_feature(colecao, feature)
             armazenamento.guardar_colecao_trechos(colecao)
-        comprimento = comprimento_do_trecho(colecao, trecho_id)
+        comprimento_gps = comprimento_do_trecho(colecao, trecho_id)
+        feature = feature_por_id(colecao, trecho_id) or {}
+        eh_ponto = (feature.get("geometry") or {}).get("type") == "Point"
 
     sufixo = Path(video.filename or "envio.mp4").suffix or ".mp4"
     bruto = tempfile.NamedTemporaryFile(delete=False, suffix=sufixo)
@@ -336,7 +413,8 @@ async def enviar_video(
             caminho_bruto,
             trecho_id,
             configuracao.pasta_saida,
-            comprimento,
+            comprimento_gps,
+            eh_ponto,
             detector,
             armazenamento,
         ),

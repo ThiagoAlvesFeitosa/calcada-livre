@@ -196,15 +196,21 @@ Fora da R. Dom Pedro II a página dizia que não havia trecho perto. A câmera d
 num toque direto da pessoa; esperar o GPS e só então abrir o seletor é bloqueado pelo navegador.
 
 **Decisão.** Cada envio cria um trecho (linha início–fim; ponto se faltar o GPS do fim). Nome
-pelo reverse do Nominatim, com Confirmar/Corrigir. Mesmo trecho só com pontas a menos de 15 m
-em qualquer sentido e mesma rua, depois da pessoa confirmar. Coleção no armazenamento.
+pelo reverse do Nominatim, com Confirmar/Corrigir; se o GPS ou o nome falhar, a pessoa digita e
+o servidor busca (Nominatim, só Brasil). Mesmo trecho só com pontas a menos de 15 m em qualquer
+sentido e mesma rua, depois da pessoa confirmar. Coleção no armazenamento.
 Fluxo da câmera: GPS do início e nome → Confirmar abre a câmera → GPS do fim → pergunta se for
-candidato → envio. GPS: `enableHighAccuracy`, `maximumAge: 0`, espera 10 s.
+candidato → envio. GPS: alta precisão, sem posição guardada, espera 10 s; se falhar, tenta sem
+alta precisão (20 s, posição de até 60 s).
+Comprimento: linha medida de 10 m ou mais usa o GPS; ponto ou linha menor usa
+`max(10 m, duração do vídeo × 1 m/s)` e grava a origem (`gps` ou `estimado pela duração`).
+Ponto no mapa: círculo com raio = metade do comprimento (mínimo 5 m). Erro de processamento
+vai para `saida/logs/app.log` (tipo, traceback, código, etapa), sem coordenada nem nome de arquivo.
 
 **Alternativas.** Cadastro prévio de faces; escolher trecho só pela proximidade do GPS.
 
-**Consequências.** *Aceitas:* o mapa cresce com o uso; Nominatim pode falhar (aí “Local sem
-nome”). *Ganhas:* qualquer rua entra na demo sem desenhar o quarteirão inteiro.
+**Consequências.** *Aceitas:* o mapa cresce com o uso; a busca de endereço depende do Nominatim.
+*Ganhas:* qualquer rua entra na demo sem desenhar o quarteirão inteiro.
 
 ## 5. Fora da demo (roadmap)
 

@@ -1,7 +1,10 @@
-const GPS_OPCOES = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
+let gpsPreciso = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
+let gpsFolga = { enableHighAccuracy: false, maximumAge: 60000, timeout: 20000 };
+let mensagemDigite = "Não conseguimos seu endereço. Digite o endereço";
+let motivosGps = {};
 
 let inicio = null;
-let nomeRua = "Local sem nome";
+let nomeRua = "";
 let videoArquivo = null;
 let candidato = null;
 
@@ -14,12 +17,16 @@ function esconder(id) {
 }
 
 function rodape(passo) {
-  ["btn-gravar", "confirmar", "corrigir", "btn-sim", "btn-nao", "btn-mapa"].forEach(esconder);
+  ["btn-gravar", "confirmar", "corrigir", "buscar-endereco", "btn-sim", "btn-nao", "btn-mapa"].forEach(
+    esconder
+  );
   if (passo === "inicio") {
     mostrar("btn-gravar");
   } else if (passo === "confirmar") {
     mostrar("confirmar");
     mostrar("corrigir");
+  } else if (passo === "endereco") {
+    mostrar("buscar-endereco");
   } else if (passo === "mesma") {
     mostrar("btn-sim");
     mostrar("btn-nao");
@@ -28,10 +35,57 @@ function rodape(passo) {
   }
 }
 
-function obterGps() {
+function aplicarParametros(corpo) {
+  if (!corpo) {
+    return;
+  }
+  if (corpo.gps_espera_s) {
+    gpsPreciso.timeout = Number(corpo.gps_espera_s) * 1000;
+  }
+  if (corpo.gps_espera_sem_precisao_s) {
+    gpsFolga.timeout = Number(corpo.gps_espera_sem_precisao_s) * 1000;
+  }
+  if (corpo.gps_idade_maxima_s) {
+    gpsFolga.maximumAge = Number(corpo.gps_idade_maxima_s) * 1000;
+  }
+  if (corpo.mensagem_digite_endereco) {
+    mensagemDigite = corpo.mensagem_digite_endereco;
+  }
+  if (corpo.motivos_gps) {
+    motivosGps = corpo.motivos_gps;
+  }
+}
+
+function textoMotivoGps(codigo) {
+  if (codigo == null) {
+    return "";
+  }
+  return motivosGps[codigo] || motivosGps[String(codigo)] || "";
+}
+
+function mostrarMotivoGps(codigo) {
+  document.getElementById("motivo-gps").textContent = textoMotivoGps(codigo);
+}
+
+function limparMotivoGps() {
+  document.getElementById("motivo-gps").textContent = "";
+}
+
+function anotarGps(codigo) {
+  if (codigo == null) {
+    return;
+  }
+  fetch("/registro-gps", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ codigo: Number(codigo) }),
+  }).catch(function () {});
+}
+
+function obterPosicao(opcoes) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error("sem-gps"));
+      reject({ codigo: 2 });
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -41,21 +95,52 @@ function obterGps() {
           lon: posicao.coords.longitude,
         });
       },
-      () => reject(new Error("falha")),
-      GPS_OPCOES
+      (erro) => reject({ codigo: erro.code }),
+      opcoes
     );
   });
+}
+
+async function obterGps() {
+  try {
+    return await obterPosicao(gpsPreciso);
+  } catch (primeiro) {
+    if (primeiro && primeiro.codigo != null) {
+      anotarGps(primeiro.codigo);
+    }
+    try {
+      return await obterPosicao(gpsFolga);
+    } catch (segundo) {
+      const codigo = segundo && segundo.codigo != null ? segundo.codigo : primeiro.codigo;
+      if (codigo != null) {
+        anotarGps(codigo);
+      }
+      throw { codigo: codigo };
+    }
+  }
 }
 
 function mostrarRua(nome) {
   esconder("inicio");
   mostrar("escolha");
+  esconder("caixa-endereco");
   const titulo = document.getElementById("voce-esta");
   titulo.innerHTML = "Você está na <span></span>";
   titulo.querySelector("span").textContent = nome;
   titulo.classList.remove("escondido");
   document.getElementById("mensagem-gps").textContent = "";
+  limparMotivoGps();
   rodape("confirmar");
+}
+
+function pedirEnderecoDigitado(codigo) {
+  esconder("inicio");
+  mostrar("escolha");
+  esconder("voce-esta");
+  mostrar("caixa-endereco");
+  document.getElementById("mensagem-gps").textContent = mensagemDigite;
+  mostrarMotivoGps(codigo);
+  rodape("endereco");
 }
 
 async function pedirInicio() {
@@ -64,6 +149,7 @@ async function pedirInicio() {
   esconder("inicio");
   mostrar("escolha");
   esconder("voce-esta");
+  esconder("caixa-endereco");
   document.getElementById("mensagem-gps").textContent = "Buscando sua localização…";
   try {
     inicio = await obterGps();
@@ -71,32 +157,48 @@ async function pedirInicio() {
       "/endereco?" + new URLSearchParams({ lat: String(inicio.lat), lon: String(inicio.lon) })
     );
     const corpo = await resposta.json();
-    if (corpo.gps_espera_s) {
-      GPS_OPCOES.timeout = Number(corpo.gps_espera_s) * 1000;
+    aplicarParametros(corpo);
+    if (corpo.nome) {
+      nomeRua = corpo.nome;
+      mostrarRua(nomeRua);
+    } else {
+      pedirEnderecoDigitado();
     }
-    nomeRua = corpo.nome || "Local sem nome";
-    mostrarRua(nomeRua);
   } catch (erro) {
-    esconder("inicio");
-    mostrar("escolha");
-    esconder("voce-esta");
-    document.getElementById("mensagem-gps").textContent =
-      "Abra pelo link seguro para usar a localização";
-    rodape("inicio");
+    inicio = null;
+    pedirEnderecoDigitado(erro && erro.codigo);
   } finally {
     botao.disabled = false;
   }
 }
 
+async function buscarEndereco() {
+  const texto = document.getElementById("endereco-digitado").value.trim();
+  if (!texto) {
+    document.getElementById("mensagem-gps").textContent = mensagemDigite;
+    return;
+  }
+  const resposta = await fetch("/endereco?" + new URLSearchParams({ q: texto }));
+  const corpo = await resposta.json();
+  aplicarParametros(corpo);
+  if (!corpo.encontrado) {
+    document.getElementById("mensagem-gps").textContent =
+      corpo.mensagem || "Endereço não encontrado, confira e tente de novo";
+    return;
+  }
+  inicio = { lat: corpo.lat, lon: corpo.lon };
+  nomeRua = corpo.nome;
+  mostrarRua(nomeRua);
+}
+
 document.getElementById("btn-gravar").addEventListener("click", pedirInicio);
 
 document.getElementById("corrigir").addEventListener("click", () => {
-  const novo = window.prompt("Nome da rua", nomeRua);
-  if (novo && novo.trim()) {
-    nomeRua = novo.trim();
-    mostrarRua(nomeRua);
-  }
+  document.getElementById("endereco-digitado").value = nomeRua;
+  pedirEnderecoDigitado();
 });
+
+document.getElementById("buscar-endereco").addEventListener("click", buscarEndereco);
 
 document.getElementById("confirmar").addEventListener("click", () => {
   document.getElementById("video").click();
@@ -164,14 +266,14 @@ function perguntarAndamento(codigo, intervaloMs, pararRelogio) {
     const resposta = await fetch("/processamentos/" + codigo);
     const corpo = await resposta.json();
     if (corpo.status === "pronto") {
-      clearInterval(laço);
+      clearInterval(laco);
       pararRelogio();
       esconder("processando");
       mostrarNota(corpo);
       return;
     }
     if (corpo.status === "erro") {
-      clearInterval(laço);
+      clearInterval(laco);
       pararRelogio();
       esconder("processando");
       const resultado = document.getElementById("resultado");
@@ -180,7 +282,7 @@ function perguntarAndamento(codigo, intervaloMs, pararRelogio) {
       rodape("inicio");
     }
   };
-  const laço = setInterval(consultar, intervaloMs);
+  const laco = setInterval(consultar, intervaloMs);
 }
 
 function enviarRelato(atualizar, mesmoId) {
@@ -248,5 +350,10 @@ function enviarRelato(atualizar, mesmoId) {
   };
   xhr.send(dados);
 }
+
+fetch("/endereco")
+  .then((r) => r.json())
+  .then(aplicarParametros)
+  .catch(() => {});
 
 rodape("inicio");

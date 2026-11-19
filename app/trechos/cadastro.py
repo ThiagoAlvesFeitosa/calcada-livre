@@ -4,7 +4,13 @@ import threading
 import uuid
 from typing import Any
 
-from app.nota.parametros import DISTANCIA_MESMO_TRECHO_M
+from app.nota.parametros import (
+    COMPRIMENTO_ORIGEM_DURACAO,
+    COMPRIMENTO_ORIGEM_GPS,
+    COMPRIMENTO_PONTO_M,
+    DISTANCIA_MESMO_TRECHO_M,
+    VELOCIDADE_CAMINHADA_MS,
+)
 from app.trechos.geometria import id_da_feature
 
 _trava = threading.Lock()
@@ -12,6 +18,17 @@ _trava = threading.Lock()
 
 def trava_cadastro() -> threading.Lock:
     return _trava
+
+
+def comprimento_efetivo(
+    comprimento_gps_m: float,
+    duracao_s: float,
+    eh_ponto: bool = False,
+) -> tuple[float, str]:
+    if not eh_ponto and float(comprimento_gps_m) >= COMPRIMENTO_PONTO_M:
+        return float(comprimento_gps_m), COMPRIMENTO_ORIGEM_GPS
+    estimado = max(float(COMPRIMENTO_PONTO_M), float(duracao_s) * VELOCIDADE_CAMINHADA_MS)
+    return float(estimado), COMPRIMENTO_ORIGEM_DURACAO
 
 
 def colecao_vazia() -> dict[str, Any]:

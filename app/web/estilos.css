@@ -105,6 +105,23 @@ body {
   padding: 1.25rem;
 }
 
+.campo-endereco {
+  display: block;
+  margin-top: 1rem;
+}
+
+.campo-endereco input {
+  width: 100%;
+  min-height: var(--altura-botao);
+  font-size: 1.05rem;
+  font-family: inherit;
+  padding: 0 1rem;
+  border: 2px solid var(--principal);
+  border-radius: var(--raio-botao);
+  background: var(--cartao);
+  box-sizing: border-box;
+}
+
 .voce-esta {
   font-size: 1.35rem;
   font-weight: 700;
@@ -116,8 +133,13 @@ body {
   border-bottom: 4px solid var(--destaque);
 }
 
-.mensagem, .dica, .legenda {
+.mensagem, .dica, .legenda, .motivo-gps {
   color: var(--texto-secundario);
+}
+
+.motivo-gps {
+  font-size: 0.85rem;
+  margin: 0.35rem 0 0;
 }
 
 .dica {
