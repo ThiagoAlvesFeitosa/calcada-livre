@@ -256,8 +256,14 @@ document.getElementById("btn-nao").addEventListener("click", () => {
 function mostrarNota(corpo) {
   const resultado = document.getElementById("resultado");
   resultado.classList.remove("escondido");
+  const resumo = corpo.resumo_obstaculos
+    ? "<p class=\"resumo-obstaculos\"></p>"
+    : "";
   resultado.innerHTML =
-    '<p>Nota</p><p class="nota ' + corpo.cor + '">' + corpo.nota + "</p>";
+    '<p>Nota</p><p class="nota ' + corpo.cor + '">' + corpo.nota + "</p>" + resumo;
+  if (corpo.resumo_obstaculos) {
+    resultado.querySelector(".resumo-obstaculos").textContent = corpo.resumo_obstaculos;
+  }
   rodape("mapa");
 }
 

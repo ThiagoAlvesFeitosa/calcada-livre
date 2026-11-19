@@ -225,6 +225,11 @@ progress {
 
 .escondido { display: none !important; }
 
+.resumo-obstaculos {
+  margin: 0.5rem 0 0;
+  font-size: 1.05rem;
+}
+
 .nota { font-size: 3rem; font-weight: 800; margin: 0.25rem 0; }
 .verde { color: var(--nota-verde); }
 .amarelo { color: var(--nota-amarelo); }

@@ -9,8 +9,8 @@ from app.visao.parametros import (
     DIVISOES_MOSAICO,
     FRACAO_EXTENSAO_INFERIOR_VEICULO,
     FRACAO_INFERIOR_VEICULO,
-    PIXELS_MINIMOS_MOSAICO,
     classe_nossa,
+    pixels_mosaico_minimo,
 )
 
 
@@ -27,7 +27,11 @@ def _pixelizar(quadro: np.ndarray, x1: int, y1: int, x2: int, y2: int) -> None:
         return
     recorte = quadro[y1:y2, x1:x2]
     altura, largura = recorte.shape[:2]
-    bloco = max(PIXELS_MINIMOS_MOSAICO, min(largura, altura) // DIVISOES_MOSAICO)
+    altura_quadro, largura_quadro = quadro.shape[:2]
+    bloco = max(
+        pixels_mosaico_minimo(altura_quadro, largura_quadro),
+        min(largura, altura) // DIVISOES_MOSAICO,
+    )
     pequeno_largura = max(1, largura // bloco)
     pequeno_altura = max(1, altura // bloco)
     pequeno = cv2.resize(recorte, (pequeno_largura, pequeno_altura), interpolation=cv2.INTER_AREA)

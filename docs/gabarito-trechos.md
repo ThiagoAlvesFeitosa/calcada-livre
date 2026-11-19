@@ -43,6 +43,28 @@ Calçada de cimento com obra em andamento. **9 obstáculos na faixa livre.**
 
 De 23 s até o fim, a calçada fica livre.
 
+## Trecho 03 — `marilia_2026-11-19_trecho-03.mp4` (5 s)
+
+Recorte de uma gravação de tela. Monte de madeira e galhos no caminho, encostado no muro,
+do segundo 0 ao 5.
+
+| # | Instante | Objeto | Classe esperada | Gravidade |
+| --- | --- | --- | --- | --- |
+| 1 | 0–5 s | Monte de madeira e galhos no caminho | `construction debris` | bloqueio |
+
+O trecho-04 ainda não existe.
+
+## Versões em pé (recorte 9:16)
+
+Os vídeos 01 e 02 foram filmados deitado. Para medir o celular em pé, há recortes centrais 9:16 em
+`saida/retrato/` (não vão para o Git), mesma linha do tempo.
+
+Chaves no `dados/gabarito.json`: `marilia_2026-11-17_trecho-01-retrato` e
+`...-trecho-02-retrato`. No 02, a lixeira (#3) e o entulho junto ao muro (#4) ficam **fora do
+quadro** (centro da caixa caiu fora da faixa 9:16). Os outros 7 itens continuam valendo.
+
+O trecho-03 já está em pé (gravação de tela).
+
 Fora da contagem: tijolo com fita zebrada apoiado no meio-fio, do lado da rua (7–10 s e 19–22 s).
 
 ## Como medir na F0.2

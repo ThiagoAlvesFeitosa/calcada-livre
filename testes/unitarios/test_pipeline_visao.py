@@ -120,7 +120,10 @@ def test_entulho_pode_ter_corte_de_confianca_menor() -> None:
 
     # executar
     com_corte_alto = filtrar_obstaculos(
-        deteccoes, confianca_padrao=0.25, fracao_caminho=0.45
+        deteccoes,
+        confianca_padrao=0.25,
+        fracao_caminho=0.45,
+        confianca_por_classe={"construction debris": 0.25},
     )
     com_corte_entulho = filtrar_obstaculos(
         deteccoes,

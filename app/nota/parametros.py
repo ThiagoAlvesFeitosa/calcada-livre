@@ -11,7 +11,7 @@ LIMITE_OCUPACAO_BLOQUEIO = 0.5
 LIMITE_VERDE = 80
 LIMITE_AMARELO = 50
 
-CLASSES_BARREIRA = frozenset({"pothole", "stairs", "buraco", "degrau"})
+CLASSES_BARREIRA = frozenset({"pothole", "stairs", "buraco", "degrau", "damaged sidewalk"})
 
 RAIO_TERRA_M = 6_371_000
 BYTES_POR_MEGABYTE = 1024 * 1024
@@ -61,6 +61,9 @@ NOMES_CLASSES_PT: dict[str, str] = {
     "pothole": "buraco",
     "stairs": "degrau",
     "construction debris": "entulho",
+    "objects on sidewalk": "objeto no caminho",
+    "damaged sidewalk": "calçada danificada",
+    "blocked path": "caminho obstruído",
     "sand pile": "areia",
     "bricks": "tijolos",
     "cardboard box": "caixa de papelão",

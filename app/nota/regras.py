@@ -9,9 +9,26 @@ from app.nota.parametros import (
     LIMITE_OCUPACAO_BLOQUEIO,
     LIMITE_VERDE,
     METROS_REFERENCIA,
+    NOMES_CLASSES_PT,
     NOTA_INICIAL,
     NOTA_MINIMA,
 )
+
+
+def frase_dos_obstaculos(obstaculos: list[dict]) -> str:
+    nomes: list[str] = []
+    vistos: set[str] = set()
+    for item in obstaculos:
+        classe = str(item.get("classe", "")).strip().lower()
+        if classe in vistos:
+            continue
+        vistos.add(classe)
+        nomes.append(NOMES_CLASSES_PT.get(classe, classe))
+    if not nomes:
+        return "Nenhum obstáculo encontrado"
+    quantidade = len(nomes)
+    rotulo = "problema" if quantidade == 1 else "problemas"
+    return f"{quantidade} {rotulo}: " + ", ".join(nomes)
 
 
 def cor_da_nota(nota: float) -> str:
@@ -49,4 +66,5 @@ def calcular_nota(obstaculos: list[dict], comprimento_m: float) -> dict:
         "cor": cor_da_nota(nota),
         "obstaculos_por_100m": quantidade * fator,
         "faixa_livre_media": faixa_livre,
+        "resumo_obstaculos": frase_dos_obstaculos(obstaculos),
     }

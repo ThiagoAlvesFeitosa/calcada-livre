@@ -40,10 +40,11 @@ def avaliar(
     tolerancia_s: float = SEGUNDOS_TOLERANCIA_GABARITO,
 ) -> dict[str, float | int]:
     marcacoes = list(resultado.get("obstaculos", []))
+    gabarito_visivel = [item for item in gabarito if not item.get("fora_do_quadro")]
     total_marcacoes = len(marcacoes)
-    total_gabarito = len(gabarito)
-    acertos_posicao = _casar(marcacoes, gabarito, exigir_classe=False, tolerancia=tolerancia_s)
-    acertos_classe = _casar(marcacoes, gabarito, exigir_classe=True, tolerancia=tolerancia_s)
+    total_gabarito = len(gabarito_visivel)
+    acertos_posicao = _casar(marcacoes, gabarito_visivel, exigir_classe=False, tolerancia=tolerancia_s)
+    acertos_classe = _casar(marcacoes, gabarito_visivel, exigir_classe=True, tolerancia=tolerancia_s)
     falsos_positivos = total_marcacoes - acertos_posicao
 
     def razao(numerador: int, denominador: int) -> float:

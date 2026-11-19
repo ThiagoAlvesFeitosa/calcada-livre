@@ -2,6 +2,78 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 19/11/2026 — vídeo em pé (retrato)
+
+Leitura do vídeo liga a rotação do arquivo (teste com mp4 de 80×40 e matriz 90°). Dilatação 24 px
+passa a acompanhar a **altura** do quadro (24 px em 576 px, como nos 01/02 deitados).
+
+Versões 9:16 dos 01 e 02 em `saida/retrato/` (fora do Git). No gabarito do 02-retrato, lixeira e
+entulho do muro estão `fora_do_quadro`.
+
+Tabela depois do recorte, com faixa de caminho 65% também no retrato:
+
+| Vídeo | Precisão (posição) | Revocação (posição) | Precisão (classe) | Revocação (classe) | FP |
+| --- | --- | --- | --- | --- | --- |
+| trecho-01 (deitado) | — | — | — | — | 0 |
+| trecho-02 (deitado) | 90% | 100% | 40% | 44% | 1 |
+| trecho-01-retrato | — | — | — | — | 0 |
+| trecho-02-retrato | 100% | 43% | 67% | 29% | 0 |
+| trecho-03 | 50% | 100% | 50% | 100% | 1 |
+
+O retrato do 02 perde revocação (o recorte some laterais; o YOLO vê menos entulho). Subir a faixa
+do caminho no retrato (0,75–0,85) melhorava o 02, mas criava 6 falsos positivos no 01-retrato.
+Fica `FRACAO_CAMINHO_INFERIOR_PAISAGEM = 0,65` e `FRACAO_CAMINHO_INFERIOR_RETRATO = 0,65`. Deitados
+não mudaram.
+
+57 testes. Sem commit (Thiago confirma; tag `demo-retrato` depois).
+
+## Situação em 19/11/2026 — trecho-03 (monte de madeira) e corte do entulho
+
+Gabarito do trecho-03: só `construction debris` de 0 a 5 s. O trecho-04 ainda não existe.
+
+Com o corte geral 0,12, o YOLO **não** marcou o monte como entulho. O “caminho obstruído”
+também não disparou. A maior confiança do entulho **no caminho** foi 0,087 (5,0 s). Havia um
+entulho 0,327 no alto do quadro, fora da faixa de andar. O que entrou no resultado foi
+`cardboard box` 0,22 aos 4,5 s (posição certa, classe errada).
+
+Corte só do entulho em 0,08: o monte passa a ser marcado como entulho. O 01 continua com 0 FP;
+o 02 fica em 90% de precisão por posição. No 03 sobra um FP (`cardboard box` no mesmo monte).
+Corte 0,10 ou 0,12 não acha o monte. Cortes 0,07–0,05 não melhoram o 01/02.
+
+| Vídeo | Precisão (posição) | Revocação (posição) | Precisão (classe) | Revocação (classe) | FP |
+| --- | --- | --- | --- | --- | --- |
+| trecho-01 | — (0 marcações) | — | — | — | 0 |
+| trecho-02 | 90% | 100% | 40% | 44% | 1 |
+| trecho-03 | 50% | 100% | 50% | 100% | 1 |
+
+51 testes. Sem commit.
+
+## Situação em 19/11/2026 — detecção: calçada danificada e caminho obstruído
+
+Medida **antes** (resultados que já estavam em `saida/`):
+
+| Vídeo | Precisão (posição) | Revocação (posição) | Precisão (classe) | Revocação (classe) | FP |
+| --- | --- | --- | --- | --- | --- |
+| trecho-01 | — (0 marcações) | — | — | — | 0 |
+| trecho-02 | 90% | 100% | 40% | 44% | 1 |
+
+**Depois** (mesmos cortes de confiança, 01 sem falso positivo):
+
+| Vídeo | Precisão (posição) | Revocação (posição) | Precisão (classe) | Revocação (classe) | FP |
+| --- | --- | --- | --- | --- | --- |
+| trecho-01 | — (0 marcações) | — | — | — | 0 |
+| trecho-02 | 90% | 100% | 40% | 44% | 1 |
+
+O que entrou: palavras de madeira/galhos no entulho; classe `damaged sidewalk` (desconto de barreira, caixa inteira no chão); classe `objects on sidewalk`; se duas caixas novas cobrem árvore/lixeira, fica a árvore/lixeira; se o chão da faixa some por 2 s, marca `blocked path`. Na tela da nota: “Nenhum obstáculo encontrado” ou “N problemas: …”.
+
+O que **não** foi para o YOLO: as frases de “calçada danificada” e “objeto no caminho”. Com elas no modelo, o trecho-02 caía de 90% para 69% de precisão. Ficam no vocabulário e nas regras; o YOLO não as procura até existirem os vídeos 03 e 04 para retunar. Também saíram `pile of junk`, `scrap`, `dirt mound`, `mud` e `rocks` (genéricas demais).
+
+Corte de confiança: calçada danificada 0,40 e objeto no caminho 0,32 — no trecho-01 essas classes apareciam com 0,24–0,30 (falso positivo). Entulho continua 0,12.
+
+Vídeos 03 e 04 **não estavam** em `../videos/` nesta máquina. Gabarito e texto já têm as linhas; falta processar quando os arquivos chegarem.
+
+51 testes. Commit só com o Thiago.
+
 ## Situação em 19/11/2026 — ajuste F1.4 (log, comprimento, endereço, mapa)
 
 No celular o processamento falhou sem rastro e o nome veio “Local sem nome”. Correção em 4 partes,
