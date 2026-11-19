@@ -2,6 +2,18 @@
 
 Ponto de retomada de cada sessão. A entrada mais nova fica no topo.
 
+## Situação em 19/11/2026 — F1.4: o relato cria o trecho
+
+O envio cria o trecho. GPS do início + nome da rua → “Você está na <rua>” → o toque em
+**Confirmar** abre a câmera (mesmo gesto; o navegador do celular bloqueia se esperar o GPS).
+Quando o vídeo volta, GPS do fim. Se as duas pontas estão a menos de 15 m de um trecho da mesma
+rua (qualquer sentido), pergunta “É a mesma calçada?”. Sem GPS no fim: ponto no mapa.
+
+Nome pelo Nominatim (porta `Geocodificador`; falso nos testes). Coleção `trechos.geojson` no
+armazenamento. Faces N/E/O saíram; 01 e 02 ficam (`scripts/importar_trechos_piloto.py`). GPS:
+alta precisão, sem posição guardada, espera 10 s. ADR-007. Commit só com o Thiago
+(`F1.4: relato cria o trecho`). Tag de volta: `demo-estavel`.
+
 ## Situação em 19/11/2026, 08h30 — decisão: o relato cria o trecho (F1.4, a fazer)
 
 Problema achado pelo Thiago no teste pelo celular, fora da R. Dom Pedro II: a página dizia “Não

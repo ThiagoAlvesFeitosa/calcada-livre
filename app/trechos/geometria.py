@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from app.nota.parametros import DISTANCIA_MAXIMA_TRECHO_M, RAIO_TERRA_M
+from app.nota.parametros import COMPRIMENTO_PONTO_M, DISTANCIA_MAXIMA_TRECHO_M, RAIO_TERRA_M
 
 
 def carregar_colecao(caminho: Path) -> dict[str, Any]:
@@ -52,8 +52,11 @@ def comprimento_da_geometria(geometria: dict[str, Any] | None) -> float:
             total += _haversine(float(lon1), float(lat1), float(lon2), float(lat2))
         return total
 
+    if tipo == "Point":
+        return float(COMPRIMENTO_PONTO_M)
     if tipo == "LineString":
-        return comprimento_linha(coordenadas)
+        medido = comprimento_linha(coordenadas)
+        return medido if medido > 0 else float(COMPRIMENTO_PONTO_M)
     if tipo == "MultiLineString":
         return sum(comprimento_linha(linha) for linha in coordenadas)
     return 0.0

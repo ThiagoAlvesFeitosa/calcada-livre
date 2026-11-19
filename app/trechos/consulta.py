@@ -65,9 +65,23 @@ def pontos_dos_obstaculos(
     obstaculos: list[dict[str, Any]],
     duracao_s: float,
 ) -> list[dict[str, Any]]:
-    if not geometria or geometria.get("type") != "LineString":
+    if not geometria:
         return []
+    tipo = geometria.get("type")
     coordenadas = geometria.get("coordinates") or []
+    if tipo == "Point" and len(coordenadas) >= 2:
+        lon, lat = float(coordenadas[0]), float(coordenadas[1])
+        return [
+            {
+                "lon": lon,
+                "lat": lat,
+                "classe": nome_em_portugues(str(item.get("classe", ""))),
+                "instante_s": float(item.get("instante_s") or 0),
+            }
+            for item in obstaculos
+        ]
+    if tipo != "LineString":
+        return []
     duracao = float(duracao_s or 0)
     pontos: list[dict[str, Any]] = []
     for item in obstaculos:

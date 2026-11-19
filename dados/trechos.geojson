@@ -4,7 +4,7 @@
     {
       "type": "Feature",
       "id": "marilia_2026-11-17_trecho-01",
-      "properties": {"nome": "R. Dom Pedro II — trecho 01"},
+      "properties": {"nome": "R. Dom Pedro II — trecho 01", "rua": "R. Dom Pedro II — trecho 01"},
       "geometry": {
         "type": "LineString",
         "coordinates": [[-49.94650, -22.21750], [-49.94640, -22.21750]]
@@ -13,37 +13,10 @@
     {
       "type": "Feature",
       "id": "marilia_2026-11-17_trecho-02",
-      "properties": {"nome": "R. Dom Pedro II — trecho 02"},
+      "properties": {"nome": "R. Dom Pedro II — trecho 02", "rua": "R. Dom Pedro II — trecho 02"},
       "geometry": {
         "type": "LineString",
         "coordinates": [[-49.94640, -22.21750], [-49.94610, -22.21750]]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "quarteirao-norte",
-      "properties": {"nome": "Face norte (ainda sem vídeo)"},
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-49.94650, -22.21735], [-49.94610, -22.21735]]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "quarteirao-leste",
-      "properties": {"nome": "Face leste (ainda sem vídeo)"},
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-49.94610, -22.21750], [-49.94610, -22.21735]]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "quarteirao-oeste",
-      "properties": {"nome": "Face oeste (ainda sem vídeo)"},
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-49.94650, -22.21750], [-49.94650, -22.21735]]
       }
     }
   ]

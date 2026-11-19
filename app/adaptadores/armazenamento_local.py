@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from app.adaptadores.arquivos_trecho import arquivos_para_guardar, nome_seguro, SUFIXO_QUADRO
+from app.nota.parametros import ARQUIVO_COLECAO_TRECHOS
+from app.trechos.cadastro import colecao_vazia
 
 
 class ArmazenamentoLocal:
@@ -50,6 +52,19 @@ class ArmazenamentoLocal:
         if not pasta.is_dir():
             return []
         return sorted(caminho.name for caminho in pasta.glob(f"*{SUFIXO_QUADRO}"))
+
+    def ler_colecao_trechos(self) -> dict:
+        caminho = self.pasta / ARQUIVO_COLECAO_TRECHOS
+        if not caminho.is_file():
+            return colecao_vazia()
+        return json.loads(caminho.read_text(encoding="utf-8"))
+
+    def guardar_colecao_trechos(self, colecao: dict) -> None:
+        self.pasta.mkdir(parents=True, exist_ok=True)
+        (self.pasta / ARQUIVO_COLECAO_TRECHOS).write_text(
+            json.dumps(colecao, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
 
     def _caminho(self, trecho_id: str, nome: str) -> Path | None:
         seguro = nome_seguro(nome)

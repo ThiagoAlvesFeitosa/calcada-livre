@@ -78,6 +78,14 @@ async function iniciar() {
       weight: espessura,
       opacity: 1,
     }),
+    pointToLayer: (feature, latlng) =>
+      L.circleMarker(latlng, {
+        radius: 8,
+        color: corLinha(feature.properties.cor),
+        fillColor: corLinha(feature.properties.cor),
+        fillOpacity: 1,
+        weight: 2,
+      }),
     onEachFeature: (feature, layer) => {
       layer.on("click", () => {
         mostrarDetalhe(feature.properties.id || feature.id);

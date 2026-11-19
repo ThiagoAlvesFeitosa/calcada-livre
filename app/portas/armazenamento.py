@@ -19,3 +19,9 @@ class Armazenamento(Protocol):
 
     def listar_quadros(self, trecho_id: str) -> list[str]:
         ...
+
+    def ler_colecao_trechos(self) -> dict:
+        ...
+
+    def guardar_colecao_trechos(self, colecao: dict) -> None:
+        ...

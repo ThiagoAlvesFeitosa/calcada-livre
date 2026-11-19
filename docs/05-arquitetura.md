@@ -31,17 +31,23 @@ Celular (navegador)                Nuvem                                  Navega
 ### 3.1 Site de coleta
 
 - Página única para celular.
-- Tutorial em 3 telas: celular deitado, na altura do peito, apontado para a calçada 3 a 5 m à
-  frente; andar devagar e sem parar; um vídeo por face de quadra, até 60 s.
-- Escolha do trecho num mapa (Leaflet + OpenStreetMap).
-- Botão "Gravar": `<input type="file" accept="video/*" capture="environment">`.
+- Tutorial curto: celular na altura do peito, apontado para a calçada, até 30 s.
+- O relato cria o trecho. Não há lista prévia de lugares.
+- “Gravar calçada” pede o GPS do início (alta precisão, sem posição guardada, espera 10 s) e o
+  nome da rua (Nominatim). Tela “Você está na <rua>”. O toque em Confirmar abre a câmera
+  no mesmo gesto (`capture="environment"`). Depois do vídeo, GPS do fim; se houver candidato,
+  pergunta “É a mesma calçada?”.
 - Barra de progresso e tela "processando".
 
 ### 3.2 API (FastAPI)
 
 - `GET /saude` — se a API e o armazenamento respondem.
-- `POST /videos` — recebe vídeo e `trecho_id`, processa, grava o resultado, apaga o vídeo bruto.
-- `GET /trechos` — GeoJSON com a nota mais recente de cada trecho.
+- `POST /videos` — recebe vídeo, GPS do início (obrigatório) e do fim (opcional), nome da rua e,
+  se a pessoa confirmou, `atualizar=sim` com o id do trecho. Processa, grava, apaga o bruto.
+- `GET /endereco` — nome da rua pelo geocodificador (Nominatim na demo; falso no teste).
+- `GET /trechos/candidatos` — mesmo trecho se as pontas estão a menos de 15 m (qualquer sentido)
+  e a rua é a mesma.
+- `GET /trechos` — GeoJSON dos trechos guardados no armazenamento, com a nota mais recente.
 - `GET /trechos/{id}` — nota, obstáculos por tipo, quadros anotados, data, laudo.
 - Processamento síncrono, porque o vídeo é curto. Fila fica no roadmap.
 
@@ -104,8 +110,9 @@ em `app/nota/parametros.py`:
   resultados no Supabase Storage (bucket privado).
 - O painel lê o Storage **pelo servidor**; a chave não vai para o navegador.
 - O `Dockerfile` (Python 3.11, uv, PyTorch CPU, porta 7860) fica no repositório para a Azure.
-- Detector (real ou falso para teste) e laudo (`llm`, `modelo_fixo` ou falso para teste) já são
-  trocáveis. Armazenamento: `local` ou `supabase`, pela mesma porta.
+- Detector (real ou falso para teste), geocodificador (Nominatim ou falso) e laudo
+  (`llm`, `modelo_fixo` ou falso para teste) já são trocáveis. Armazenamento: `local` ou
+  `supabase`, pela mesma porta. A coleção de trechos (`trechos.geojson`) fica no armazenamento.
 
 ## 4. Decisões (ADR)
 
@@ -182,10 +189,27 @@ O vídeo bruto não sobe. O `Dockerfile` permanece pronto para a Azure depois.
 cada execução; o túnel corta resposta longa (~100 s) e envio grande (~100 MB). *Ganhas:* https
 com GPS, resultados que não somem ao fechar o túnel, custo zero no prazo.
 
+### ADR-007 — O relato cria o trecho
+
+**Contexto.** Exigir trecho cadastrado antes de gravar obrigaria desenhar todas as calçadas.
+Fora da R. Dom Pedro II a página dizia que não havia trecho perto. A câmera do celular só abre
+num toque direto da pessoa; esperar o GPS e só então abrir o seletor é bloqueado pelo navegador.
+
+**Decisão.** Cada envio cria um trecho (linha início–fim; ponto se faltar o GPS do fim). Nome
+pelo reverse do Nominatim, com Confirmar/Corrigir. Mesmo trecho só com pontas a menos de 15 m
+em qualquer sentido e mesma rua, depois da pessoa confirmar. Coleção no armazenamento.
+Fluxo da câmera: GPS do início e nome → Confirmar abre a câmera → GPS do fim → pergunta se for
+candidato → envio. GPS: `enableHighAccuracy`, `maximumAge: 0`, espera 10 s.
+
+**Alternativas.** Cadastro prévio de faces; escolher trecho só pela proximidade do GPS.
+
+**Consequências.** *Aceitas:* o mapa cresce com o uso; Nominatim pode falhar (aí “Local sem
+nome”). *Ganhas:* qualquer rua entra na demo sem desenhar o quarteirão inteiro.
+
 ## 5. Fora da demo (roadmap)
 
 - Rota acessível a pé (OSRM ou Valhalla com custo por barreira).
 - Largura em metros e inclinação.
 - Detector ajustado com Project Sidewalk e imagens de Marília; detecção de rampa.
-- Trecho identificado pelo GPS do celular.
+- Reverse geocode próprio (hoje Nominatim).
 - Varreduras repetidas mostrando a evolução de cada trecho.

@@ -63,6 +63,7 @@ def _preparar(tmp_path: Path) -> ArmazenamentoFalso:
     (quadros / "0000_0.0s.png").write_bytes(b"png-mosaico")
     armazenamento = ArmazenamentoFalso(True)
     armazenamento.guardar_trecho(TRECHO_A, pasta)
+    armazenamento.guardar_colecao_trechos(json.loads(geojson.read_text(encoding="utf-8")))
     configuracao = Configuracao(
         armazenamento="supabase",
         pasta_saida=str(tmp_path / "disco-vazio"),

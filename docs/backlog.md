@@ -140,6 +140,29 @@ pode faltar.
 **Depende de:** F1.3.
 **Referência:** `05-arquitetura.md`, seção 3.7; ADR-003; ADR-006.
 
+## F1.4 — O relato cria o trecho
+
+**Objetivo:** gravar em qualquer rua, sem cadastro prévio de lugares.
+
+**Descrição:**
+> O envio cria o trecho (linha do GPS de início ao fim; ponto se faltar o fim). O nome vem do
+> GPS (Nominatim), com Confirmar/Corrigir. A câmera só abre no toque em Confirmar. Depois do
+> vídeo, GPS do fim; se as pontas e a rua baterem com um trecho já filmado, a pessoa confirma
+> se é a mesma calçada.
+
+**Critérios de aceite:**
+
+- `test_relato_longe_de_tudo_cria_trecho_novo` *(teste)*
+- `test_pontas_perto_e_confirmado_atualiza_o_mesmo_trecho` *(teste)*
+- `test_mesmo_lugar_com_nao_cria_trecho_novo` *(teste)*
+- `test_sem_gps_no_fim_vira_ponto` *(teste)*
+- `test_geocodificador_que_falha_devolve_local_sem_nome` *(teste)*
+- Confirmar abre a câmera no mesmo toque; GPS com alta precisão, sem posição guardada, 10 s
+- Faces norte, leste e oeste saem; trechos 01 e 02 ficam e entram no armazenamento
+
+**Depende de:** F2.1.
+**Referência:** `05-arquitetura.md`, ADR-007.
+
 ## F2.2 — Prioridade e laudo
 
 **Objetivo:** ajudar o gestor a decidir o que consertar primeiro.

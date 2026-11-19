@@ -28,16 +28,26 @@ from app.nota.parametros import (
     COR_VERDE,
     COR_VERMELHO,
     EXTENSOES_VIDEO,
+    GPS_ESPERA_S,
+    NOME_LOCAL_SEM_NOME,
 )
 from app.nota.regras import calcular_nota
 from app.portas.armazenamento import Armazenamento
 from app.portas.detector import Detector
+from app.portas.geocodificador import Geocodificador
 from app.processamentos import marcar_erro, marcar_pronto, obter, registrar, trava_visao
+from app.trechos.cadastro import (
+    acrescentar_feature,
+    candidato_mesmo_trecho,
+    geometria_do_relato,
+    nova_feature,
+    trava_cadastro,
+)
 from app.trechos.consulta import (
-    carregar_trechos,
     detalhe_do_trecho,
     formatar_data_brasilia,
     geojson_com_notas,
+    nota_do_trecho,
     resumo_censo,
 )
 from app.trechos.geometria import comprimento_do_trecho, ids_dos_trechos, trecho_mais_proximo
@@ -64,6 +74,18 @@ def obter_armazenamento(
     return criar_armazenamento(configuracao)
 
 
+_geocodificador_real: Geocodificador | None = None
+
+
+def obter_geocodificador() -> Geocodificador:
+    global _geocodificador_real
+    if _geocodificador_real is None:
+        from app.adaptadores.geocodificador_nominatim import GeocodificadorNominatim
+
+        _geocodificador_real = GeocodificadorNominatim()
+    return _geocodificador_real
+
+
 def obter_detector() -> Detector:
     global _detector_real
     if _detector_real is None:
@@ -79,6 +101,19 @@ def _eh_video(arquivo: UploadFile) -> bool:
         return True
     nome = Path(arquivo.filename or "").suffix.lower()
     return nome in EXTENSOES_VIDEO
+
+
+def _float_opcional(valor: str | None) -> float | None:
+    if valor is None:
+        return None
+    texto = str(valor).strip()
+    if texto == "":
+        return None
+    return float(texto)
+
+
+def _colecao(armazenamento: Armazenamento) -> dict:
+    return armazenamento.ler_colecao_trechos()
 
 
 def _trabalhar(
@@ -144,19 +179,46 @@ def listar_trechos(
     configuracao: Configuracao = Depends(obter_configuracao),
     armazenamento: Armazenamento = Depends(obter_armazenamento),
 ) -> dict:
-    colecao = carregar_trechos(configuracao.caminho_trechos)
-    return geojson_com_notas(armazenamento, colecao)
+    return geojson_com_notas(armazenamento, _colecao(armazenamento))
 
 
 @app.get("/localizacao")
 def localizacao(
     lat: float,
     lon: float,
-    configuracao: Configuracao = Depends(obter_configuracao),
+    armazenamento: Armazenamento = Depends(obter_armazenamento),
 ) -> dict:
-    colecao = carregar_trechos(configuracao.caminho_trechos)
-    achado = trecho_mais_proximo(colecao, lon, lat)
+    achado = trecho_mais_proximo(_colecao(armazenamento), lon, lat)
     return {"trecho": achado}
+
+
+@app.get("/endereco")
+def endereco(
+    lat: float,
+    lon: float,
+    geocodificador: Geocodificador = Depends(obter_geocodificador),
+) -> dict:
+    nome = geocodificador.nome_da_rua(lat, lon)
+    return {"nome": nome or NOME_LOCAL_SEM_NOME, "gps_espera_s": GPS_ESPERA_S}
+
+
+@app.get("/trechos/candidatos")
+def candidatos(
+    lat_inicio: float,
+    lon_inicio: float,
+    rua: str = "",
+    lat_fim: float | None = None,
+    lon_fim: float | None = None,
+    armazenamento: Armazenamento = Depends(obter_armazenamento),
+) -> dict:
+    colecao = _colecao(armazenamento)
+    achado = candidato_mesmo_trecho(colecao, lon_inicio, lat_inicio, lon_fim, lat_fim, rua)
+    if achado is None:
+        return {"candidato": None}
+    nota = nota_do_trecho(armazenamento, colecao, achado["id"])
+    if nota and nota.get("data"):
+        achado["data"] = formatar_data_brasilia(nota["data"])
+    return {"candidato": achado}
 
 
 @app.get("/trechos/{trecho_id}")
@@ -165,8 +227,7 @@ def detalhe(
     configuracao: Configuracao = Depends(obter_configuracao),
     armazenamento: Armazenamento = Depends(obter_armazenamento),
 ) -> dict:
-    colecao = carregar_trechos(configuracao.caminho_trechos)
-    detalhe = detalhe_do_trecho(armazenamento, colecao, trecho_id)
+    detalhe = detalhe_do_trecho(armazenamento, _colecao(armazenamento), trecho_id)
     if detalhe is None:
         raise HTTPException(status_code=404, detail="Trecho não encontrado.")
     return detalhe
@@ -177,8 +238,7 @@ def censo(
     configuracao: Configuracao = Depends(obter_configuracao),
     armazenamento: Armazenamento = Depends(obter_armazenamento),
 ) -> dict:
-    colecao = carregar_trechos(configuracao.caminho_trechos)
-    resumo = resumo_censo(armazenamento, colecao)
+    resumo = resumo_censo(armazenamento, _colecao(armazenamento))
     return {
         "sem_obstaculo": resumo["sem_obstaculo"],
         "filmados": resumo["filmados"],
@@ -203,8 +263,7 @@ def quadro(
         raise HTTPException(status_code=404)
     if not nome.lower().endswith(".png"):
         raise HTTPException(status_code=404)
-    colecao = carregar_trechos(configuracao.caminho_trechos)
-    if trecho_id not in ids_dos_trechos(colecao):
+    if trecho_id not in ids_dos_trechos(_colecao(armazenamento)):
         raise HTTPException(status_code=404)
     dados = armazenamento.ler_quadro(trecho_id, nome)
     if not dados:
@@ -222,24 +281,45 @@ def andamento(codigo: str) -> dict:
 
 @app.post("/videos")
 async def enviar_video(
-    trecho_id: str = Form(...),
     video: UploadFile = File(...),
+    lat_inicio: str = Form(...),
+    lon_inicio: str = Form(...),
+    lat_fim: str | None = Form(None),
+    lon_fim: str | None = Form(None),
+    nome: str = Form(""),
+    atualizar: str = Form(""),
+    mesmo_trecho_id: str = Form(""),
     configuracao: Configuracao = Depends(obter_configuracao),
     detector: Detector = Depends(obter_detector),
     armazenamento: Armazenamento = Depends(obter_armazenamento),
 ) -> dict:
-    colecao = carregar_trechos(configuracao.caminho_trechos)
-    if trecho_id not in ids_dos_trechos(colecao):
-        raise HTTPException(status_code=400, detail="Trecho não existe.")
     if not _eh_video(video):
         raise HTTPException(status_code=400, detail="Arquivo não é vídeo.")
     conteudo = await video.read()
     limite = configuracao.tamanho_maximo_video_mb * BYTES_POR_MEGABYTE
     if len(conteudo) > limite or configuracao.tamanho_maximo_video_mb <= 0:
         raise HTTPException(status_code=400, detail="Vídeo acima do tamanho máximo.")
-    comprimento = comprimento_do_trecho(colecao, trecho_id)
-    if comprimento <= 0:
-        raise HTTPException(status_code=400, detail="Trecho sem comprimento no mapa.")
+    try:
+        lat_i = float(lat_inicio)
+        lon_i = float(lon_inicio)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Localização inicial inválida.")
+    lat_f = _float_opcional(lat_fim)
+    lon_f = _float_opcional(lon_fim)
+    nome_rua = (nome or "").strip() or NOME_LOCAL_SEM_NOME
+
+    with trava_cadastro():
+        colecao = _colecao(armazenamento)
+        if atualizar.strip().lower() == "sim" and mesmo_trecho_id.strip():
+            trecho_id = mesmo_trecho_id.strip()
+            if trecho_id not in ids_dos_trechos(colecao):
+                raise HTTPException(status_code=400, detail="Trecho não existe.")
+        else:
+            feature = nova_feature(nome_rua, geometria_do_relato(lon_i, lat_i, lon_f, lat_f))
+            trecho_id = str(feature["id"])
+            colecao = acrescentar_feature(colecao, feature)
+            armazenamento.guardar_colecao_trechos(colecao)
+        comprimento = comprimento_do_trecho(colecao, trecho_id)
 
     sufixo = Path(video.filename or "envio.mp4").suffix or ".mp4"
     bruto = tempfile.NamedTemporaryFile(delete=False, suffix=sufixo)
@@ -267,5 +347,6 @@ async def enviar_video(
         "codigo": codigo,
         "status": "processando",
         "intervalo_s": INTERVALO_ANDAMENTO_S,
+        "trecho_id": trecho_id,
     }
 

@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from app.adaptadores.arquivos_trecho import arquivos_para_guardar, nome_seguro, SUFIXO_QUADRO
+from app.nota.parametros import ARQUIVO_COLECAO_TRECHOS
+from app.trechos.cadastro import colecao_vazia
 
 
 class ArmazenamentoSupabase:
@@ -53,6 +55,19 @@ class ArmazenamentoSupabase:
             if nome.lower().endswith(SUFIXO_QUADRO) and nome_seguro(nome):
                 nomes.append(nome)
         return sorted(nomes)
+
+    def ler_colecao_trechos(self) -> dict:
+        dados = self._baixar(ARQUIVO_COLECAO_TRECHOS)
+        if not dados:
+            return colecao_vazia()
+        return json.loads(dados.decode("utf-8"))
+
+    def guardar_colecao_trechos(self, colecao: dict) -> None:
+        self._enviar(
+            ARQUIVO_COLECAO_TRECHOS,
+            json.dumps(colecao, ensure_ascii=False, indent=2).encode("utf-8"),
+            "application/json",
+        )
 
     def _enviar(self, caminho: str, conteudo: bytes, tipo: str) -> None:
         opcoes = {"content-type": tipo, "upsert": "true"}

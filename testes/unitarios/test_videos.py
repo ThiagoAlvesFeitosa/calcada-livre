@@ -62,6 +62,7 @@ def _preparar(tmp_path: Path, tamanho_mb: int = 95) -> tuple[Configuracao, Armaz
     mascara = np.ones((80, 80), dtype=bool)
     detector = DetectorFalso([ResultadoQuadro(mascara_calcada=mascara, caixas=[])])
     armazenamento = ArmazenamentoFalso(disponivel=True)
+    armazenamento.guardar_colecao_trechos({"type": "FeatureCollection", "features": []})
     app.dependency_overrides[obter_configuracao] = lambda: configuracao
     app.dependency_overrides[obter_armazenamento] = lambda: armazenamento
     app.dependency_overrides[obter_detector] = lambda: detector
@@ -94,7 +95,7 @@ def test_post_videos_recusa_arquivo_que_nao_e_video(tmp_path: Path) -> None:
     # executar
     resposta = cliente.post(
         "/videos",
-        data={"trecho_id": TRECHO},
+        data={"lat_inicio": "-22.2", "lon_inicio": "-49.9"},
         files={"video": ("texto.txt", b"nao e video", "text/plain")},
     )
 
@@ -113,7 +114,7 @@ def test_post_videos_recusa_arquivo_acima_do_limite(tmp_path: Path) -> None:
     # executar
     resposta = cliente.post(
         "/videos",
-        data={"trecho_id": TRECHO},
+        data={"lat_inicio": "-22.2", "lon_inicio": "-49.9"},
         files={"video": ("curto.mp4", video.read_bytes(), "video/mp4")},
     )
 
@@ -132,7 +133,12 @@ def test_post_videos_recusa_trecho_que_nao_existe(tmp_path: Path) -> None:
     # executar
     resposta = cliente.post(
         "/videos",
-        data={"trecho_id": "trecho-inventado"},
+        data={
+            "lat_inicio": "-22.2",
+            "lon_inicio": "-49.9",
+            "atualizar": "sim",
+            "mesmo_trecho_id": "trecho-inventado",
+        },
         files={"video": ("curto.mp4", video.read_bytes(), "video/mp4")},
     )
 
@@ -151,7 +157,7 @@ def test_post_videos_devolve_codigo_na_hora(tmp_path: Path) -> None:
     # executar
     resposta = cliente.post(
         "/videos",
-        data={"trecho_id": TRECHO},
+        data={"lat_inicio": "-22.2", "lon_inicio": "-49.9", "nome": "Rua teste"},
         files={"video": ("curto.mp4", video.read_bytes(), "video/mp4")},
     )
 
@@ -175,19 +181,19 @@ def test_video_bruto_e_apagado_depois_do_processamento(tmp_path: Path) -> None:
     # executar
     resposta = cliente.post(
         "/videos",
-        data={"trecho_id": TRECHO},
+        data={"lat_inicio": "-22.2", "lon_inicio": "-49.9", "nome": "Rua teste"},
         files={"video": ("curto.mp4", video.read_bytes(), "video/mp4")},
     )
     corpo = _esperar_pronto(cliente, resposta.json()["codigo"])
 
     # verificar
     assert corpo["nota"] == 100
-    pasta = tmp_path / "saida" / TRECHO
+    pasta = tmp_path / "saida" / corpo["trecho_id"]
     brutos = [caminho for caminho in tmp_path.rglob("*.mp4") if caminho != video]
     assert brutos == []
     assert (pasta / "resultado.json").exists()
     assert (pasta / "nota.json").exists()
-    assert armazenamento.ler_json(TRECHO, "nota.json") is not None
+    assert armazenamento.ler_json(corpo["trecho_id"], "nota.json") is not None
     assert not any(chave.endswith(".mp4") for chave in armazenamento.arquivos)
     _limpar()
 

@@ -44,11 +44,15 @@ ficam no Supabase. O Dockerfile permanece no repositório para um dia na Azure (
    `ARMAZENAMENTO=supabase`, `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_BUCKET`.
    Vídeo no máximo **95 MB**; grave **até 30 segundos**.
 2. No Supabase: crie um bucket **privado** com o mesmo nome de `SUPABASE_BUCKET`.
-3. Suba o que já está em `saida/` (trechos 01 e 02), para o mapa não ficar cinza:
+3. Suba o que já está em `saida/` (trechos 01 e 02) e a coleção de trechos:
 
    ```
    uv run python scripts/subir_existentes.py
+   uv run python scripts/importar_trechos_piloto.py
    ```
+
+Na página Gravar: o botão pede o GPS e o nome da rua; **Confirmar** abre a câmera no mesmo toque;
+depois do vídeo, o GPS do fim e, se parecer o mesmo lugar, a pergunta se é a mesma calçada.
 
 4. Instale o túnel no Windows:
 
